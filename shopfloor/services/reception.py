@@ -539,8 +539,8 @@ class Reception(Component):
         # process : find product, scan it, press button: call ws,
         # find another one scan it one, scan it twice, then scran anothe product
         # call ws,...
-        # 
-        # each callws: 
+        #
+        # each callws:
         # find a move_line
         # fill each move line sorting whatever order
 
@@ -591,7 +591,7 @@ class Reception(Component):
                     selected_line_ids.append(new_line.id)
         if to_be_assigned > 0:
             # todo: on se fait sortir car pas de lignes
-            # todo: que fais ton du surplus? 
+            # todo: que fais ton du surplus?
             # on l'ajoute a la dernière ligne
             line.qty_done += to_be_assigned
         return self._response_for_select_package(
@@ -1348,7 +1348,7 @@ class ShopfloorReceptionValidatorResponse(Component):
 
     def set_custom_qty(self):
         return self._response_schema(next_states={"select_package"})
-    
+
     def increase_received_qty(self):
         return self._response_schema(next_states={"select_package"})
 
