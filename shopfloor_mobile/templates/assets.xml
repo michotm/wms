@@ -233,6 +233,15 @@
         <script
             id="script_component_form_edit_stock_picking"
             t-attf-src="/shopfloor_mobile/assets/src/components/forms/form_edit_stock_picking.js?v=#{app_version}"
+        />
+        <script
+            id="receipt_list"
+            t-attf-src="/shopfloor_mobile/assets/src/components/receipt_list.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="receipt_detail"
+            t-attf-src="/shopfloor_mobile/assets/src/components/receipt_detail.js?v=#{app_version}"
             type="module"
         />
         <!-- States -->
