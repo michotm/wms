@@ -93,6 +93,7 @@ class ShopfloorMenu(models.Model):
             ("checkout", "Checkout/Packing"),
             ("delivery", "Delivery"),
             ("location_content_transfer", "Location Content Transfer"),
+            ("reception", "Reception"),
         ]
 
     @api.depends("scenario", "picking_type_ids")
