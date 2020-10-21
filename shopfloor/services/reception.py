@@ -127,29 +127,64 @@ class Reception(Component):
         )
 
     def scan_document(self, barcode):
-        """Scan a product, a picking(?)
+        """Scan a product, a picking
 
-        When a location is scanned, if all the move lines from this destination
-        are for the same stock.picking, the stock.picking is used for the
-        next steps.
+        When a stock.picking is scanned, go to select_line.
 
-        When a package is scanned, if the package has a move line to move it
-        from a location/sublocation of the current stock.picking.type, the
-        stock.picking for the package is used for the next steps.
-
-        When a stock.picking is scanned, it is used for the next steps.
+        When a product is scanned, the list of pickings containing
+        this product will be returned with manual_selection
 
         In every case above, the stock.picking must be entirely available and
         must match the current picking type.
 
         Transitions:
         * select_document: when no stock.picking could be found
+        * manual_selection: a picking list
         * select_line: a stock.picking is selected
         * summary: stock.picking is selected and all its lines have a
           destination pack set
         """
         search = self.actions_for("search")
         picking = search.picking_from_scan(barcode)
+
+        if not picking:
+            product = search.product_from_scan(barcode)
+            if not product:
+                return self._response_for_select_document(
+                    message={
+                        "message_type": "error",
+                        "body": _(
+                            "No picking and no product found"
+                        ),
+                    }
+                )
+            # search pickings which contains this product
+            pickings = self.env["stock.picking"].search(
+                self._domain_for_list_stock_picking(),
+                order=self._order_for_list_stock_picking(),
+            )
+            candidates = self.env['stock.picking']
+            for picking in pickings:
+                # todo: create a helper to find a product in multiple pickings
+                move_lines = self._lines_to_receive(picking)
+                products = move_lines.mapped('product_id')
+                if product in products:
+                    candidates |= picking
+            if candidates:
+                data = {"pickings": self.data.pickings(candidates)}
+                return self._response(next_state="manual_selection", data=data)
+
+        if not picking:
+            return self._response_for_select_document(
+                message={
+                    "message_type": "error",
+                    "body": _(
+                        "No picking found for given product"
+                    ),
+                }
+            )
+        # TODO: support  scan packaging
+
         return self._select_picking(picking, "select_document")
 
     def _select_picking(self, picking, state_for_error):
@@ -1008,12 +1043,12 @@ class Reception(Component):
                     },
                 )
         picking.action_done()
-        return self._response_for_select_document(
+        return self._responsean_for_select_document(
             message=self.msg_store.transfer_done_success(picking)
         )
 
 
-class ShopfloorCheckoutValidator(Component):
+class ShopfloorReceptionValidator(Component):
     """Validators for the Checkout endpoints"""
 
     _inherit = "base.shopfloor.validator"
@@ -1180,7 +1215,7 @@ class ShopfloorCheckoutValidator(Component):
         }
 
 
-class ShopfloorCheckoutValidatorResponse(Component):
+class ShopfloorReceptionValidatorResponse(Component):
     """Validators for the Checkout endpoints responses"""
 
     _inherit = "base.shopfloor.validator.response"
@@ -1288,7 +1323,7 @@ class ShopfloorCheckoutValidatorResponse(Component):
 
     def scan_document(self):
         return self._response_schema(
-            next_states={"select_document", "select_line", "summary"}
+            next_states={"manual_selection", "select_document", "select_line", "summary"}
         )
 
     def list_stock_picking(self):
