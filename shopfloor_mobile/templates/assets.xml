@@ -244,7 +244,17 @@
             t-attf-src="/shopfloor_mobile/assets/src/components/receipt_detail.js?v=#{app_version}"
             type="module"
         />
-        <!-- States -->
+        <script
+            id="contact_list"
+            t-attf-src="/shopfloor_mobile/assets/src/components/contacts/contact-list.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="contact_detail"
+            t-attf-src="/shopfloor_mobile/assets/src/components/contacts/contact-detail.js?v=#{app_version}"
+            type="module"
+        />
+        <!-- Scenario States --!>
         <script
             id="script_scenario_state_products_scan_products"
             t-attf-src="/shopfloor_mobile/assets/src/scenario/products/scan_products.js?v=#{app_version}"
@@ -253,6 +263,11 @@
         <script
             id="script_scenario_state_batch_move_line"
             t-attf-src="/shopfloor_mobile/assets/src/scenario/batch/move_lines.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="choosing_reception_contact"
+            t-attf-src="/shopfloor_mobile/assets/src/scenario/reception/choosing_reception_contact.js?v=#{app_version}"
             type="module"
         />
         <!-- Scenario -->
