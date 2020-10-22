@@ -286,7 +286,7 @@ export var ScenarioBaseMixin = {
             return this.usage + "/" + state_key;
         },
         wait_call: function(promise, callback) {
-            return promise.then(this.on_call_success, this.on_call_error);
+            return promise.then(callback || this.on_call_success, this.on_call_error);
         },
         on_state_enter: function() {
             const state = this._get_state_spec();

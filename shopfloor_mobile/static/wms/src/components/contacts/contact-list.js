@@ -5,8 +5,16 @@
  */
 
 Vue.component("contact-list", {
-    props: ["contacts"],
+    props: ["contacts", "fields"],
     template: `
-        <contact-detail :contact="contact" v-for="contact in contacts" v-key="contact.code"/>
+        <div>
+            <contact-detail
+                v-on="$listeners"
+                :fields="fields"
+                :contact="contact"
+                v-for="contact in contacts"
+                :key="contact.id"
+                />
+        </div>
     `,
-}),
+});

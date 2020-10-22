@@ -249,10 +249,20 @@
             t-attf-src="/shopfloor_mobile/assets/src/components/contacts/contact-detail.js?v=#{app_version}"
             type="module"
         />
+        <script
+            id="picking_list"
+            t-attf-src="/shopfloor_mobile/assets/src/components/picking/picking-list.js?v=#{app_version}"
+            type="module"
+        />
         <!-- Scenario States -->
         <script
             id="choosing_reception_contact"
             t-attf-src="/shopfloor_mobile/assets/src/scenario/reception/choosing_reception_contact.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="choosing_reception_picking"
+            t-attf-src="/shopfloor_mobile/assets/src/scenario/reception/choosing_reception_picking.js?v=#{app_version}"
             type="module"
         />
         <!-- Scenario -->
