@@ -254,7 +254,7 @@
             t-attf-src="/shopfloor_mobile/assets/src/components/contacts/contact-detail.js?v=#{app_version}"
             type="module"
         />
-        <!-- Scenario States --!>
+        <!-- Scenario States -->
         <script
             id="script_scenario_state_products_scan_products"
             t-attf-src="/shopfloor_mobile/assets/src/scenario/products/scan_products.js?v=#{app_version}"
