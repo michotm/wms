@@ -12,6 +12,7 @@ Vue.component("choosing-reception-picking", {
                 :input_placeholder="scan_placeholder"
                 />
             <picking-list
+                v-on="$listeners"
                 :pickings="stateData.data.pickings"
                 />
         </div>

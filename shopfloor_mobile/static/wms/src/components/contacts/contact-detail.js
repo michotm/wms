@@ -9,7 +9,7 @@ Vue.component("contact-detail", {
     template: `
         <item-detail-card
             :record="contact"
-            :options="{fields: fields, full_detail: true, on_title_action: () => $emit('select-contact', contact.id)}"
+            :options="{fields: fields, full_detail: true, on_click_action: () => $emit('select-contact', contact.id)}"
             />
     `,
 });

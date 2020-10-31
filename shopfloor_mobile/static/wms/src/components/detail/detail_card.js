@@ -10,8 +10,15 @@ Vue.component("item-detail-card", {
     mixins: [ItemDetailMixin],
     props: ["card_color", "outlined"],
     template: `
-    <div :class="wrapper_klass" class="flex-grow-1">
-        <v-card :color="card_color" tile :class="{'main': opts.main, 'no-outline': opts.no_outline}" v-if="!_.isEmpty(record)" :outlined="outlined">
+    <div :class="wrapper_klass">
+        <v-card
+            :color="card_color"
+            tile
+            :class="{'main': opts.main, 'no-outline': opts.no_outline}"
+            v-if="!_.isEmpty(record)"
+            @click="opts.on_click_action(record, field)"
+            :outlined="outlined"
+            >
             <v-card-title v-if="!opts.no_title">
                 <slot name="title">
                     <v-icon v-if="opts.title_icon" v-text="opts.title_icon" class="mr-2" />
