@@ -18,6 +18,11 @@ const Reception = {
                 />
             <choosing-reception-picking
                 v-if="state_is('choosingPicking')"
+                v-on:select-picking="state.onSelect"
+                :stateData="state"
+                />
+            <reception-scanning-product
+                v-if="state_is('scanningProduct')"
                 :stateData="state"
                 />
         </Screen>
@@ -60,6 +65,7 @@ const Reception = {
                     ],
                 },
                 choosingPicking: {
+                    onSelect: () => alert("yo"),
                     fields: [
                         {
                             label: "Partner",

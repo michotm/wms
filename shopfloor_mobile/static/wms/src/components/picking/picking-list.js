@@ -13,7 +13,7 @@ Vue.component("picking-list", {
                 :fields="fields"
                 :record="picking"
                 v-for="picking in pickings"
-                :options="{fields: fields, full_detail: true, on_title_action: () => $emit('select-picking', picking.id)}"
+                :options="{fields: fields, full_detail: true, on_click_action: () => $emit('select-picking', picking.id)}"
                 :key="picking.id"
                 />
         </div>

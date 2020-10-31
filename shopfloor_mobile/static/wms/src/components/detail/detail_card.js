@@ -11,7 +11,13 @@ Vue.component("item-detail-card", {
     props: ["card_color"],
     template: `
     <div :class="wrapper_klass">
-        <v-card :color="card_color" tile :class="{'main': opts.main, 'no-outline': opts.no_outline}" v-if="!_.isEmpty(record)">
+        <v-card
+            :color="card_color"
+            tile
+            :class="{'main': opts.main, 'no-outline': opts.no_outline}"
+            v-if="!_.isEmpty(record)"
+            @click="opts.on_click_action(record, field)"
+            >
             <v-card-title v-if="!opts.no_title">
                 <slot name="title">
                     <span v-text="_.result(record, opts.key_title)" />
