@@ -84,3 +84,19 @@ class ReceptionCase(ReceptionCommonCase):
             next_state="manual_selection",
             data={"pickings": self.data.pickings(expected)},
         )
+
+    def test_inc_qty(self):
+        picking = self.picking1
+
+        response = self.service.dispatch(
+            "increase_received_qty",
+            params={
+                "picking_id": picking.id, "product_id": self.product_a.id,
+                "qty_done": 2})
+        print(response)
+        self.assert_response(
+            response,
+            next_state="manual_selection",
+            data={"pickings": self.data.pickings(expected)},
+        )
+

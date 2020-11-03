@@ -546,8 +546,6 @@ class Reception(Component):
 
         picking = self.env["stock.picking"].browse(picking_id)
         # TODO: gerer le multi picking ici?
-        import pdb
-        pdb.set_trace()
         selection_lines = self._lines_to_receive(picking)
         if not selection_lines:
             return self._response_for_summary(picking)
