@@ -259,6 +259,16 @@
             t-attf-src="/shopfloor_mobile/assets/src/components/picking/picking-list.js?v=#{app_version}"
             type="module"
         />
+        <script
+            id="reception_product_list"
+            t-attf-src="/shopfloor_mobile/assets/src/components/product/reception-product-list.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="reception_product"
+            t-attf-src="/shopfloor_mobile/assets/src/components/product/reception-product.js?v=#{app_version}"
+            type="module"
+        />
         <!-- Scenario States -->
         <script
             id="script_scenario_state_products_scan_products"

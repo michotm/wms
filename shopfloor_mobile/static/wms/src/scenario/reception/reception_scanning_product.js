@@ -4,17 +4,18 @@
  * License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
  */
 
-Vue.component("choosing-reception-picking", {
+Vue.component("reception-scanning-product", {
     props: ["stateData"],
     template: `
         <div>
+            <reception-info-bar :reception="stateData"/>
             <searchbar
                 :input_placeholder="scan_placeholder"
                 />
-            <picking-list
+            <reception-product-list
                 v-on="$listeners"
-                :pickings="stateData.data.pickings"
-                />
+                :products="stateData.data.pickings"
+                >
         </div>
     `,
     data: () => ({
