@@ -13,17 +13,18 @@ const Reception = {
         <Screen :screen_info="screen_info">
             <choosing-reception-contact
                 v-if="state_is('choosingContact')"
-                v-on:select-contact="state.onSelect"
+                @select-contact="state.onSelectContact"
                 :stateData="state"
                 />
             <choosing-reception-picking
                 v-if="state_is('choosingPicking')"
-                v-on:select-picking="state.onSelect"
+                @select-picking="state.onSelectPicking"
                 :stateData="state"
                 />
             <reception-scanning-product
-                v-if="state_is('scanningProduct')"
+                v-if="state_is('select_line')"
                 :stateData="state"
+                @scan-product="state.onScanProduct"
                 />
         </Screen>
     `,
@@ -34,7 +35,7 @@ const Reception = {
             scan_destination_qty: 0,
             states: {
                 choosingContact: {
-                    onSelect: () => {
+                    onSelectContact: () => {
                         this.wait_call(
                             this.odoo.call('list_stock_picking'),
                             (result) => {
@@ -65,7 +66,11 @@ const Reception = {
                     ],
                 },
                 choosingPicking: {
-                    onSelect: () => alert("yo"),
+                    onSelectPicking: (picking_id) => {
+                        this.wait_call(
+                            this.odoo.call('select', {picking_id})
+                        );
+                    },
                     fields: [
                         {
                             label: "Partner",
@@ -73,6 +78,10 @@ const Reception = {
                         },
                     ],
                 },
+                select_line: {
+                    onScanProduct: () => {
+                    },
+                }
             },
         };
     },
