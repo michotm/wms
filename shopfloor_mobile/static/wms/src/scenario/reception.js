@@ -24,8 +24,19 @@ const Reception = {
             <reception-scanning-product
                 v-if="state_is('select_line')"
                 :stateData="state"
-                @scan-product="state.onScanProduct"
+                @found="state.onScanProduct"
                 />
+            <v-dialog
+                v-model="errorNotFound"
+                >
+                <v-card>
+                    <v-card-title class="headline">Product not found</v-card-title>
+                    <v-card-text>This product is not in the receipt</v-card-text>
+                    <v-card-actions>
+                        <v-btn depressed @click="errorNotFound = undefined">Ok</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
         </Screen>
     `,
     data: function() {
@@ -33,6 +44,7 @@ const Reception = {
             usage: "reception",
             initial_state_key: "choosingContact",
             scan_destination_qty: 0,
+            errorNotFound: undefined,
             states: {
                 choosingContact: {
                     onSelectContact: () => {
@@ -79,7 +91,42 @@ const Reception = {
                     ],
                 },
                 select_line: {
-                    onScanProduct: () => {
+                    scanned: [],
+                    productQtyFields: [
+                        {
+                            label: "Qty",
+                            path: "qty",
+                        },
+                    ],
+                    productFields: [
+                        {
+                            label: "Qty",
+                            path: "qtyDone",
+                        },
+                    ],
+                    receptionFields: [
+                        {
+                            label: "Partner",
+                            path: "partner.name",
+                        },
+                    ],
+                    onScanProduct: ({text: scanData}) => {
+                        // We check if the product is in the receipt
+                        let product = this.state.data.picking.move_lines.find(line => {
+                            return line.product.barcode === scanData;
+                        });
+
+                        if (!product) {
+                            this.errorNotFound = scanData;
+                            return;
+                        }
+
+                        let productModel = {
+                            name: product.product.name,
+                            qty: 1,
+                        };
+
+                        this.state_set_data({...this.state.data, productChooseQuantity: productModel});
                     },
                 }
             },

@@ -4,12 +4,14 @@
  * License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
  */
 
-Vue.component("reception-product", {
-    props: ["product", "fields"],
+Vue.component("reception-info-bar", {
+    props: ["reception", "fields"],
     template: `
-        <item-detail-card
-            :record="product"
-            :options="{fields: fields}"
+        <div>
+            <item-detail-card
+                :record="reception"
+                :options="{fields: fields}"
             />
+        </div>
     `,
 });

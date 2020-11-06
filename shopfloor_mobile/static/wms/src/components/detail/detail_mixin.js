@@ -50,7 +50,7 @@ export var ItemDetailMixin = {
         has_detail_action(record, field) {
             return _.result(record, field.action_val_path);
         },
-        on_click_action() {},
+        on_click_action: null,
         on_detail_action(record, field, options = {}) {
             let handler = this.default_detail_action_handler;
             handler = field.detail_action

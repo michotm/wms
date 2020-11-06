@@ -5,13 +5,13 @@
  */
 
 Vue.component("reception-product-list", {
-    props: ["products"],
+    props: {"products": {default: []}, "fields": undefined},
     template: `
         <div>
-            <v-card v-if="products.length == 0">Start scanning product to start</v-if>
             <reception-product
                 v-if="products.length > 0"
                 v-for="product in products"
+                :fields="fields"
                 :product="product"
                 :key="product.id"
                 />

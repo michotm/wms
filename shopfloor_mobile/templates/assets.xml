@@ -269,6 +269,16 @@
             t-attf-src="/shopfloor_mobile/assets/src/components/product/reception-product.js?v=#{app_version}"
             type="module"
         />
+        <script
+            id="reception_info_bar"
+            t-attf-src="/shopfloor_mobile/assets/src/components/product/reception-info-bar.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="reception_fill_quantity"
+            t-attf-src="/shopfloor_mobile/assets/src/components/product/reception-fill-quantity.js?v=#{app_version}"
+            type="module"
+        />
         <!-- Scenario States -->
         <script
             id="script_scenario_state_products_scan_products"
@@ -288,6 +298,11 @@
         <script
             id="choosing_reception_picking"
             t-attf-src="/shopfloor_mobile/assets/src/scenario/reception/choosing_reception_picking.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="reception_scanning_product"
+            t-attf-src="/shopfloor_mobile/assets/src/scenario/reception/reception_scanning_product.js?v=#{app_version}"
             type="module"
         />
         <!-- Scenario -->
