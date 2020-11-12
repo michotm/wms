@@ -991,7 +991,11 @@ class Checkout(Component):
             picking, message={"message_type": "success", "body": msg}
         )
 
+<<<<<<< HEAD
     def scan_product(self, picking_id, barcode, qty, setting=False):
+=======
+    def scan_product(self, picking_id, barcode):
+>>>>>>> a0e2e267... added scan_product method in checkout
         picking = self.env["stock.picking"].browse(picking_id)
         message = self._check_picking_status(picking)
         if message:
@@ -1005,6 +1009,10 @@ class Checkout(Component):
         """
         move_lines = picking.move_line_ids.filtered(
             lambda l: l.product_id.barcode == barcode
+<<<<<<< HEAD
+=======
+            and l.qty_done < l.product_uom_qty
+>>>>>>> a0e2e267... added scan_product method in checkout
         )
         if len(move_lines) > 0:
             move_line = move_lines[0]
@@ -1014,6 +1022,7 @@ class Checkout(Component):
                 message=self.msg_store.barcode_not_found()
             )
 
+<<<<<<< HEAD
         quantity_to_set = qty if setting else move_line.qty_done + qty
 
         if quantity_to_set > move_line.product_uom_qty:
@@ -1032,6 +1041,14 @@ class Checkout(Component):
         else:
             move_line.shopfloor_checkout_done = False
 
+=======
+        self._change_line_qty(
+            picking_id,
+            [line.id for line in picking.move_line_ids],
+            [move_line.id],
+            lambda __: move_line.qty_done + 1
+        )
+>>>>>>> a0e2e267... added scan_product method in checkout
 
         return self._response_for_scanned_product(
             picking, message
@@ -1044,6 +1061,7 @@ class Checkout(Component):
             message=message,
         )
 
+<<<<<<< HEAD
     def confirm_pack(self, picking_id):
         picking = self.env["stock.picking"].browse(picking_id)
         message = self._check_picking_status(picking)
@@ -1060,6 +1078,8 @@ class Checkout(Component):
             message=message,
         )
 
+=======
+>>>>>>> a0e2e267... added scan_product method in checkout
     def done(self, picking_id, confirmation=False):
         """Set the moves as done
 
@@ -1127,6 +1147,7 @@ class ShopfloorCheckoutValidator(Component):
         return {
             "picking_id": {"coerce": to_int, "required": True, "type": "integer"},
             "barcode": {"required": True, "type": "string"},
+<<<<<<< HEAD
             "qty": {"required": True, "type": "integer"},
             "setting": {"required": False, "type": "boolean"},
         }
@@ -1134,6 +1155,8 @@ class ShopfloorCheckoutValidator(Component):
     def confirm_pack(self):
         return {
             "picking_id": {"coerce": to_int, "required": True, "type": "integer"},
+=======
+>>>>>>> a0e2e267... added scan_product method in checkout
         }
 
     def select_line(self):
@@ -1294,7 +1317,10 @@ class ShopfloorCheckoutValidatorResponse(Component):
             "manual_selection": self._schema_selection_list,
             "select_line": self._schema_stock_picking_details,
             "scan_products": self._schema_stock_picking_details,
+<<<<<<< HEAD
             "ship_procducts": self._schema_stock_picking_details,
+=======
+>>>>>>> a0e2e267... added scan_product method in checkout
             "select_package": dict(
                 self._schema_selected_lines,
                 packing_info={"type": "string", "nullable": True},
@@ -1413,11 +1439,14 @@ class ShopfloorCheckoutValidatorResponse(Component):
             next_states={"scan_products"}
         )
 
+<<<<<<< HEAD
     def confirm_pack(self):
         return self._response_schema(
             next_states={"ship_products"}
         )
 
+=======
+>>>>>>> a0e2e267... added scan_product method in checkout
     def select_line(self):
         return self.scan_line()
 
