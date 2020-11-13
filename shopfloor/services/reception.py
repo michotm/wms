@@ -581,14 +581,7 @@ class Reception(Component):
                     to_add = to_be_done
                     to_be_assigned -= to_be_done
                 qty_done = to_add + line.qty_done
-                new_line, qty_check = line._split_qty_to_be_done(
-                    qty_done,
-                    split_partial=True, result_package_id=False,
-                )
                 line.qty_done = qty_done
-                if new_line:
-                    print('que fais ton avec ça ?')
-                    selected_line_ids.append(new_line.id)
         if to_be_assigned > 0:
             # todo: on se fait sortir car pas de lignes
             # todo: que fais ton du surplus?
