@@ -267,10 +267,7 @@ class BaseShopfloorService(AbstractComponent):
         # because it's a demo key.
         demo_api_key = self.env.ref(
             "shopfloor.api_key_demo", raise_if_not_found=False
-        )
-        if demo_api_key:
-            demo_api_key = demo_api_key.sudo()
-
+        ).sudo()
         service_params = [
             {
                 "name": "API-KEY",
