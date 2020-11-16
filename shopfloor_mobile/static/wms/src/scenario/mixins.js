@@ -16,6 +16,7 @@ export var ScenarioBaseMixin = {
                     body: "",
                 },
             },
+            lastBarcodeScanned: null,
             need_confirmation: false,
             show_reset_button: false,
             initial_state_key: "start",
@@ -75,7 +76,15 @@ export var ScenarioBaseMixin = {
                 this.current_state = this._make_current_state(data);
             },
         },
-        search_input_placeholder: function () {
+        lastScanned: {
+            get: function() {
+                return this.lastBarcodeScanned;
+            },
+            set: function(barcode) {
+                this.lastBarcodeScanned = barcode;
+            },
+        },
+        search_input_placeholder: function() {
             const placeholder = this.state.display_info.scan_placeholder;
             return _.isFunction(placeholder) ? placeholder.call(this) : placeholder;
         },
