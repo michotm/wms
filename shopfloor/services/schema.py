@@ -186,3 +186,35 @@ class BaseShopfloorSchemaResponse(Component):
             "id": {"required": True, "type": "integer"},
             "name": {"type": "string", "nullable": False, "required": True},
         }
+
+    def inventory(self):
+        return {
+            "id": {"required": True, "type": "integer"},
+            "name": {"type": "string", "nullable": False, "required": True},
+            "locations": self._schema_list_of(self.location()),
+        }
+
+    def inventory_line(self, with_packaging):
+        schema = {
+            "id": {"type": "integer", "required": True},
+            "product_qty": {"type": "float", "required": True},
+            "theoretical_qty": {"type": "float", "required": True},
+            "product": self._schema_dict_of(self.product()),
+            "lot": {
+                "type": "dict",
+                "required": False,
+                "nullable": True,
+                "schema": self.lot(),
+            },
+            "package": self._schema_dict_of(
+                self.package(with_packaging=with_packaging)
+            ),
+        }
+        return schema
+
+    def inventory_location(self):
+        schema = {
+            "inventory": self._schema_dict_of(self.inventory()),
+            "location": self._schema_dict_of(self.location()),
+        }
+        return schema

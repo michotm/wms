@@ -255,3 +255,18 @@ class DataAction(Component):
             "id",
             "name",
         ]
+
+    @property
+    def _inventory_parser(self):
+        return [
+            "id",
+            "name",
+            "state",
+            ("location_ids:locations", self._location_parser),
+        ]
+
+    def inventory(self, record, **kw):
+        return self._jsonify(record, self._inventory_parser, **kw)
+
+    def inventories(self, record, **kw):
+        return self.inventory(record, multi=True)
