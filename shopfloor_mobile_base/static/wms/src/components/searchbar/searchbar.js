@@ -8,7 +8,7 @@
  */
 
 Vue.component("searchbar", {
-    data: function () {
+    data: function() {
         return {
             entered: "",
         };
@@ -33,12 +33,13 @@ Vue.component("searchbar", {
             type: Boolean,
             default: true,
         },
+        refocusInput: Boolean,
     },
-    mounted: function () {
+    mounted: function() {
         this.$root.event_hub.$on("screen:reload", this.on_screen_reload);
     },
     methods: {
-        search: function (e) {
+        search: function(e) {
             e.preventDefault();
             // Talk to parent
             this.$emit("found", {
@@ -47,12 +48,16 @@ Vue.component("searchbar", {
             });
             if (this.reset_on_submit) this.reset();
         },
-        reset: function () {
+        reset: function() {
             this.entered = "";
         },
-        on_screen_reload: function (evt) {
-            if (this.reload_steal_focus)
-                $(this.$el).find(":input[name=searchbar]").focus();
+        refocus: function() {
+            if (this.refocusInput) {
+                setTimeout(() => this.$refs.input.focus());
+            }
+        },
+        on_screen_reload: function(evt) {
+            if (this.reload_steal_focus) this.$refs.input.focus();
         },
     },
 
@@ -65,10 +70,12 @@ Vue.component("searchbar", {
       >
     <v-text-field
       name="searchbar"
+      ref="input"
       required v-model="entered"
       :placeholder="input_placeholder"
       :autofocus="autofocus ? 'autofocus' : null"
       :autocomplete="autocomplete"
+      @blur="refocus()"
       />
   </v-form>
   `,
