@@ -42,6 +42,7 @@
         <field name="arch" type="xml">
             <field name="profile_id" position="after">
                 <field name="picking_type_ids" />
+                <field name="scan_and_pack" />
             </field>
         </field>
     </record>

@@ -27,6 +27,7 @@ class ShopfloorMenu(Component):
 
     def _one_record_parser(self):
         return super()._one_record_parser() + [
+            ("scan_and_pack:scan_and_pack"),
             ("picking_type_ids:picking_types", ["id", "name"]),
         ]
 
@@ -40,7 +41,10 @@ class ShopfloorMenuValidatorResponse(Component):
     def _record_schema(self):
         schema = super()._record_schema
         schema.update(
-            {"picking_types": self.schemas._schema_list_of(self._picking_type_schema)}
+            {
+                "scan_and_pack": {"type": "boolean", "nullable": True},
+                "picking_types": self.schemas._schema_list_of(self._picking_type_schema),
+            }
         )
         schema.update(self.schemas.move_lines_counters())
         return schema

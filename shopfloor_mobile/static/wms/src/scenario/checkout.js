@@ -22,6 +22,19 @@ const Checkout = {
                 v-if="state.on_scan"
                 v-on:found="on_scan"
                 :input_placeholder="search_input_placeholder"
+                :fields="state.fields"
+                :refocusInput="true"
+                />
+            <scan-products
+                v-if="state_is('scan_products')"
+                :products="state.data.picking.move_lines"
+                :fields="state.fields"
+                :lastScanned="lastScanned"
+                :packing="state.data.picking"
+                v-on:addQuantity="on_user_confirm"
+                v-on:shippedFinished="state.shipFinished"
+                v-on:shippedUnfinished="state.shipUnfinished"
+                v-on:skipPack="state.skipPack"
                 />
             <div v-if="state_is('select_document')">
                 <div class="button-list button-vertical-list full">
@@ -218,6 +231,12 @@ const Checkout = {
                 {path: "packaging.name"},
             ];
         },
+        product_fields() {
+            return [
+                {path: "qty", label: "Quantity"},
+                {path: "qtyDone", label: "Done"},
+            ];
+        },
     },
     methods: {
         screen_title: function() {
@@ -271,6 +290,72 @@ const Checkout = {
             usage: "checkout",
             initial_state_key: "select_document",
             states: {
+                scan_products: {
+                    on_scan: scanned => {
+                        const intInText = parseInt(scanned.text);
+                        if (
+                            !isNaN(intInText) &&
+                            intInText < 10000 &&
+                            this.lastScanned
+                        ) {
+                            this.state.on_user_confirm(intInText);
+                        } else {
+                            this.wait_call(
+                                this.odoo.call("scan_product", {
+                                    barcode: scanned.text,
+                                    picking_id: this.state.data.picking.id,
+                                    qty: 1,
+                                })
+                            );
+                            this.lastScanned = scanned.text;
+                        }
+                    },
+                    on_user_confirm: qty => {
+                        this.wait_call(
+                            this.odoo.call("scan_product", {
+                                barcode: this.lastScanned,
+                                picking_id: this.state.data.picking.id,
+                                qty: parseInt(qty),
+                                setting: true,
+                            })
+                        );
+                        this.lastScanned = null;
+                    },
+                    shipFinished: () => {
+                        this.wait_call(
+                            this.odoo.call("done", {
+                                picking_id: this.state.data.picking.id,
+                            })
+                        );
+                        this.lastScanned = null;
+                    },
+                    shipUnfinished: () => {
+                        this.wait_call(
+                            this.odoo.call("done", {
+                                picking_id: this.state.data.picking.id,
+                            })
+                        );
+                        this.lastScanned = null;
+                    },
+                    skipPack: () => {
+                        this.wait_call(
+                            this.odoo.call("scan_document", {
+                                barcode: this.state.data.picking.move_lines[0]
+                                    .location_src.barcode,
+                                skip: parseInt(this.state.data.skip || 0) + 1,
+                            })
+                        );
+                        this.lastScanned = null;
+                    },
+                    display_info: {
+                        scan_placeholder: "Barcode or quantity",
+                    },
+                    fields: [
+                        {path: "supplierCode", label: "Vendor code", klass: "loud"},
+                        {path: "qty", label: "Quantity"},
+                        {path: "qtyDone", label: "Done"},
+                    ],
+                },
                 select_document: {
                     display_info: {
                         title: "Choose an order to pack",
@@ -278,7 +363,10 @@ const Checkout = {
                     },
                     on_scan: scanned => {
                         this.wait_call(
-                            this.odoo.call("scan_document", {barcode: scanned.text})
+                            this.odoo.call("scan_document", {
+                                barcode: scanned.text,
+                                skip: this.$route.query.skip,
+                            })
                         );
                     },
                     on_manual_selection: evt => {

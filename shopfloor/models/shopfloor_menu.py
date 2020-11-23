@@ -9,6 +9,12 @@ class ShopfloorMenu(models.Model):
     picking_type_ids = fields.Many2many(
         comodel_name="stock.picking.type", string="Operation Types", required=True
     )
+
+    scan_and_pack = fields.Boolean(
+        default=False,
+        string="Activate scan and pack",
+    )
+
     move_create_is_possible = fields.Boolean(compute="_compute_move_create_is_possible")
     # only available for some scenarios, move_create_is_possible defines if the option
     # can be used or not

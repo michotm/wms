@@ -1,7 +1,7 @@
 import {ScenarioBaseMixin} from "./mixins.js";
 import {process_registry} from "../services/process_registry.js";
 
-const ClusterPicking = {
+const ClusterBatchPicking = {
     mixins: [ScenarioBaseMixin],
     template: `
         <Screen :screen_info="screen_info">
@@ -33,11 +33,13 @@ const ClusterPicking = {
                 />
             <batch-move-line
                 v-if="state_is('scan_products')"
-                :batch="state.data"
+                :moveLines="state.data.move_lines"
                 :fields="state.fields"
                 :lastScanned="lastScanned"
                 :selectedLocation="selectedLocation"
-                @cancelLine="state.cancelLine"
+                :currentLocation="currentLocation"
+                :lastPickedLine="lastPickedLine"
+                @action="state.actionStockOut"
                 />
             <batch-picking-line-actions
                 v-if="state_is('start_line')"
@@ -98,15 +100,12 @@ const ClusterPicking = {
                             <v-btn color="primary" @click="$emit('action', 'action_split')">Split [TODO]</v-btn>
                         </v-col>
                     </v-row>
+                    <v-row align="center">
+                        <v-col class="text-center" cols="12">
+                            <btn-back />
+                        </v-col>
+                    </v-row>
                 </div>
-            </div>
-
-            <div class="button-list button-vertical-list full">
-                <v-row align="center" v-if="state_in(['unload_all', 'change_pack_lot'])">
-                    <v-col class="text-center" cols="12">
-                        <btn-back />
-                    </v-col>
-                </v-row>
             </div>
 
         </Screen>
@@ -140,16 +139,6 @@ const ClusterPicking = {
             }
             return data.picking;
         },
-        current_doc: function() {
-            const picking = this.current_picking();
-            if (!picking) {
-                return {};
-            }
-            return {
-                record: picking,
-                identifier: picking.name,
-            };
-        },
         action_full_bin: function() {
             this.wait_call(
                 this.odoo.call("prepare_unload", {
@@ -168,10 +157,10 @@ const ClusterPicking = {
 
             return move_line || {};
         },
-        find_src_location: function(move_lines, barcode) {
+        find_src_location: function(move_lines, barcode, filter = () => true) {
             let location_src = "";
 
-            move_lines.forEach(line => {
+            move_lines.filter(filter).forEach(line => {
                 if (line.location_src.barcode === barcode) {
                     location_src = line.location_src.id;
                 }
@@ -183,9 +172,11 @@ const ClusterPicking = {
     data: function() {
         // TODO: add a title to each screen
         return {
-            usage: "cluster_picking",
+            usage: "cluster_batch_picking",
             initial_state_key: "start",
             scan_destination_qty: 0,
+            currentLocation: null,
+            lastPickedLine: null,
             states: {
                 start: {
                     on_get_work: evt => {
@@ -213,16 +204,6 @@ const ClusterPicking = {
                 },
                 confirm_start: {
                     on_confirm: () => {
-                        const is_scan_and_pack = this.$root.appmenu.menus.find(
-                            m => m.id === this._get_menu_item_id()
-                        ).scan_and_pack;
-                        if (is_scan_and_pack) {
-                            return this.wait_call(
-                                this.odoo.call("confirm_start_scan_and_pack", {
-                                    picking_batch_id: this.current_batch().id,
-                                })
-                            );
-                        }
                         this.wait_call(
                             this.odoo.call("confirm_start", {
                                 picking_batch_id: this.current_batch().id,
@@ -241,16 +222,27 @@ const ClusterPicking = {
                     },
                 },
                 scan_products: {
-                    cancelLine: move_line_id => {
-                        this.wait_call(
-                            this.odoo.call("cancel_line", {
-                                move_line_id,
-                                picking_batch_id: this.state.data.id,
-                            })
-                        );
+                    actionStockOut: ({move_line_id, event_name}) => {
+                        if (event_name === "actionStockOut") {
+                            this.wait_call(
+                                this.odoo.call("stock_issue", {
+                                    move_line_id,
+                                    picking_batch_id: this.state.data.id,
+                                })
+                            );
+                        } else if (event_name === "cancelLine") {
+                            this.wait_call(
+                                this.odoo.call("cancel_line", {
+                                    move_line_id,
+                                    picking_batch_id: this.state.data.id,
+                                })
+                            );
+                        }
                     },
                     on_scan: scanned => {
-                        const intInText = parseInt(scanned.text);
+                        const intInText =
+                            "" + scanned.text == parseInt(scanned.text, 10) &&
+                            parseInt(scanned.text, 10);
                         let move_line = this.find_move_line(
                             this.state.data.move_lines,
                             scanned.text,
@@ -262,97 +254,151 @@ const ClusterPicking = {
                             line => !line.done
                         );
 
-                        if (!isNaN(intInText) && intInText === 0) {
-                            this.wait_call(
-                                this.odoo.call("set_quantity_scan_and_pack", {
-                                    barcode: this.lastScanned,
-                                    picking_batch_id: this.state.data.id,
-                                    move_line_id: last_move_line.id,
-                                    qty: intInText,
-                                })
-                            );
+                        //0) Nothing selected:
+                        //  * Scan a source location -> A
+                        //A) Source Location selected:
+                        //  * Scan a product -> B
+                        //  * Scan another source location -> A
+                        //B) Source location selected and product scanned:
+                        //  * Scan destination -> split line if quantity isn't enough -> 0
 
-                            this.lastScanned = null;
-                        } else if (
-                            !isNaN(intInText) &&
-                            intInText > 0 &&
-                            intInText < 10000 &&
-                            this.lastScanned
-                        ) {
-                            // scanning quantity
-                            if (last_move_line.id) {
-                                this.wait_call(
-                                    this.odoo.call("set_quantity_scan_and_pack", {
-                                        barcode: this.lastScanned,
-                                        picking_batch_id: this.state.data.id,
-                                        move_line_id: last_move_line.id,
-                                        qty: intInText,
-                                    })
-                                );
-                            } else {
-                                this.set_message({
-                                    body:
-                                        "You can't set quantity for an already pick product",
-                                    message_type: "error",
-                                });
-                            }
-                        } else {
-                            //scanning barcode
-                            if (!move_line.id && !last_move_line.id) {
-                                // scanning barcode that does not match with a move_line
-                                // and without a previously selected product
-                                // this should try to select a location
-                                return (this.selectedLocation = this.find_src_location(
-                                    this.state.data.move_lines,
-                                    scanned.text
-                                ));
-                            }
-                            if (!move_line.id && last_move_line.id) {
-                                // scanning barcode with previous product selection and the barcode
-                                // doesn't match a product in the picking
-                                // this correspond to scanning a potential location or bin package
-                                this.lastScanned = null;
+                        const selectedLocation = this.find_src_location(
+                            this.state.data.move_lines,
+                            scanned.text,
+                            line => !line.done
+                        );
 
-                                return this.wait_call(
-                                    this.odoo.call("scan_location_scan_and_pack", {
-                                        barcode: scanned.text,
-                                        move_line_id: last_move_line.id,
-                                        picking_batch_id: this.state.data.id,
-                                        qty: last_move_line.qty_done,
-                                    })
-                                );
-                            } else if (move_line.id) {
-                                // this is the user scanning a product
-                                // we check first if this is the same product as last picked if it exists
-                                // in both these cases we increment the qty done for the move_line
-                                if (
-                                    last_move_line.id === move_line.id ||
-                                    !last_move_line.id
-                                ) {
+                        if (selectedLocation && !last_move_line.id) {
+                            this.selectedLocation = selectedLocation;
+                            this.currentLocation = selectedLocation;
+                            this.reset_notification();
+                        } else if (this.selectedLocation) {
+                            if (move_line.id) {
+                                if (last_move_line.id === move_line.id) {
                                     this.wait_call(
-                                        this.odoo.call("scan_product_scan_and_pack", {
+                                        this.odoo.call("scan_product", {
                                             barcode: scanned.text,
                                             move_line_id: move_line.id,
                                             picking_batch_id: this.state.data.id,
+                                            location_id: this.selectedLocation,
                                             qty: 1,
+                                        }),
+                                        result => {
+                                            if (
+                                                !result.message ||
+                                                result.message.message_type !== "error"
+                                            ) {
+                                                this.lastScanned = scanned.text;
+                                            }
+                                        }
+                                    );
+                                } else if (!last_move_line.id) {
+                                    this.wait_call(
+                                        this.odoo.call("set_quantity", {
+                                            barcode: scanned.text,
+                                            move_line_id: move_line.id,
+                                            picking_batch_id: this.state.data.id,
+                                            location_id: this.selectedLocation,
+                                            qty: 1,
+                                        }),
+                                        result => {
+                                            if (
+                                                !result.message ||
+                                                result.message.message_type !== "error"
+                                            ) {
+                                                this.lastScanned = scanned.text;
+                                            }
+                                        }
+                                    );
+                                }
+                            } else {
+                                if (!isNaN(intInText) && intInText === 0) {
+                                    this.wait_call(
+                                        this.odoo.call("set_quantity", {
+                                            barcode: this.lastScanned,
+                                            picking_batch_id: this.state.data.id,
+                                            move_line_id: last_move_line.id,
+                                            location_id: this.selectedLocation,
+                                            qty: intInText,
                                         })
                                     );
 
-                                    this.lastScanned = scanned.text;
-                                } else {
-                                    //If the user is trying to scan a new product without unselecting or
-                                    //placing the product previously selected product we warn him that's not possible
-                                    //they must scan a location or unselect first
+                                    this.lastScanned = null;
+                                    this.selectedLocation = null;
+                                } else if (
+                                    !isNaN(intInText) &&
+                                    intInText > 0 &&
+                                    intInText < 10000 &&
+                                    this.lastScanned
+                                ) {
+                                    this.wait_call(
+                                        this.odoo.call("set_quantity", {
+                                            barcode: this.lastScanned,
+                                            picking_batch_id: this.state.data.id,
+                                            move_line_id: last_move_line.id,
+                                            location_id: this.selectedLocation,
+                                            qty: intInText,
+                                        })
+                                    );
+                                } else if (move_line.id) {
                                     this.set_message({
-                                        body:
-                                            "You must scan a destination for the current products, or unselect it",
                                         message_type: "error",
+                                        body: `You can't scan another product before scanning a package or destination location`,
                                     });
+                                } else if (last_move_line.id) {
+                                    this.wait_call(
+                                        this.odoo.call("set_destination", {
+                                            barcode: scanned.text,
+                                            move_line_id: last_move_line.id,
+                                            picking_batch_id: this.state.data.id,
+                                            qty: last_move_line.qty_done,
+                                        }),
+                                        result => {
+                                            if (
+                                                result.message &&
+                                                result.message.message_type ===
+                                                    "success"
+                                            ) {
+                                                this.lastScanned = null;
+                                                this.selectedLocation = null;
+                                                this.lastPickedLine = last_move_line.id;
+                                            }
+                                        }
+                                    );
+                                } else {
+                                    const selectedFromAllLocation = this.find_src_location(
+                                        this.state.data.move_lines,
+                                        scanned.text
+                                    );
+
+                                    if (selectedFromAllLocation === "") {
+                                        this.set_message({
+                                            message_type: "error",
+                                            body: `You need to scan a product or a location`,
+                                        });
+                                    } else {
+                                        this.set_message({
+                                            message_type: "error",
+                                            body: `You can't select this location`,
+                                        });
+                                    }
                                 }
+                            }
+                        } else {
+                            const selectedFromAllLocation = this.find_src_location(
+                                this.state.data.move_lines,
+                                scanned.text
+                            );
+
+                            if (selectedFromAllLocation === "") {
+                                this.set_message({
+                                    message_type: "error",
+                                    body: "You need to scan a source location",
+                                });
                             } else {
                                 this.set_message({
-                                    body: "There is no more product like that to pick",
                                     message_type: "error",
+                                    body: `You can't select this location`,
                                 });
                             }
                         }
@@ -381,110 +427,23 @@ const ClusterPicking = {
                     },
                     display_info: {
                         scan_placeholder: () =>
-                            `${!this.lastScanned ? "Barcode" : ""}${
-                                this.lastScanned ? "Quantity, package" : ""
-                            } or location`,
+                            `Scan a ${!this.selectedLocation ? "source location" : ""}${
+                                this.selectedLocation && !this.lastScanned
+                                    ? "Product"
+                                    : ""
+                            }${
+                                this.selectedLocation && this.lastScanned
+                                    ? "Quantity, package or destination location"
+                                    : ""
+                            }`,
                     },
                     fields: [
                         {path: "supplierCode", label: "Vendor code", klass: "loud"},
                         {path: "qty", label: "Quantity"},
                         {path: "qtyDone", label: "Done"},
-                        {path: "dest.name", label: "Destination"},
+                        {path: "picking_dest.name", label: "Picking destination"},
+                        {path: "dest.name", label: "Should be put in"},
                     ],
-                },
-                start_line: {
-                    display_info: {
-                        title: "Pick the product by scanning something",
-                        scan_placeholder: "Scan location / pack / product / lot",
-                    },
-                    // Here we have to use some info sent back from `select`
-                    // or from `find_batch` that we pass to scan line
-                    on_scan: scanned => {
-                        this.wait_call(
-                            this.odoo.call("scan_line", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                                barcode: scanned.text,
-                            })
-                        );
-                    },
-                    // Additional actions
-                    on_action: action => {
-                        this.state["on_" + action].call(this);
-                    },
-                    on_action_full_bin: () => {
-                        this.action_full_bin();
-                    },
-                    on_action_skip_line: () => {
-                        this.wait_call(
-                            this.odoo.call("skip_line", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                            })
-                        );
-                    },
-                    on_action_stock_out: () => {
-                        this.state_set_data(this.state.data, "stock_issue");
-                        this.state_to("stock_issue");
-                    },
-                    on_action_change_pack_or_lot: () => {
-                        this.state_set_data(this.state.data, "change_pack_lot");
-                        this.state_to("change_pack_lot");
-                    },
-                },
-                scan_destination: {
-                    display_info: {
-                        title: "Check qty and scan a destination bin",
-                        scan_placeholder: "Scan destination bin",
-                    },
-                    events: {
-                        qty_edit: "on_qty_edit",
-                    },
-                    enter: () => {
-                        // TODO: shalle we hook v-model for qty input straight to the state data?
-                        this.scan_destination_qty = this.state_get_data(
-                            "start_line"
-                        ).quantity;
-                    },
-                    on_qty_edit: qty => {
-                        this.scan_destination_qty = parseInt(qty, 10);
-                    },
-                    on_scan: scanned => {
-                        this.wait_call(
-                            this.odoo.call("scan_destination", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                                barcode: scanned.text,
-                                quantity: this.scan_destination_qty,
-                            })
-                        );
-                    },
-                    on_action_full_bin: () => {
-                        this.action_full_bin();
-                    },
-                },
-                zero_check: {
-                    on_action: action => {
-                        this.state["on_" + action].call(this);
-                    },
-                    on_action_confirm_zero: () => {
-                        this.wait_call(
-                            this.odoo.call("is_zero", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                                zero: true,
-                            })
-                        );
-                    },
-                    on_action_confirm_not_zero: () => {
-                        this.wait_call(
-                            this.odoo.call("is_zero", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                                zero: false,
-                            })
-                        );
-                    },
                 },
                 unload_all: {
                     display_info: {
@@ -581,39 +540,11 @@ const ClusterPicking = {
                         );
                     },
                 },
-                change_pack_lot: {
-                    display_info: {
-                        title: "Change pack or lot",
-                        scan_placeholder: "Scan pack or lot",
-                    },
-                    on_scan: scanned => {
-                        this.wait_call(
-                            this.odoo.call("change_pack_lot", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                                barcode: scanned.text,
-                            })
-                        );
-                    },
-                },
-                stock_issue: {
-                    enter: () => {
-                        this.reset_notification();
-                    },
-                    on_confirm_stock_issue: () => {
-                        this.wait_call(
-                            this.odoo.call("stock_issue", {
-                                picking_batch_id: this.current_batch().id,
-                                move_line_id: this.state.data.id,
-                            })
-                        );
-                    },
-                },
             },
         };
     },
 };
 
-process_registry.add("cluster_picking", ClusterPicking);
+process_registry.add("cluster_batch_picking", ClusterBatchPicking);
 
-export default ClusterPicking;
+export default ClusterBatchPicking;
