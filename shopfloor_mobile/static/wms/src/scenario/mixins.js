@@ -16,6 +16,8 @@ export var ScenarioBaseMixin = {
                     body: "",
                 },
             },
+            lastBarcodeScanned: null,
+            selectedLocationId: null,
             need_confirmation: false,
             show_reset_button: false,
             initial_state_key: "start",
@@ -75,7 +77,23 @@ export var ScenarioBaseMixin = {
                 this.current_state = this._make_current_state(data);
             },
         },
-        search_input_placeholder: function () {
+        selectedLocation: {
+            get: function() {
+                return this.selectedLocationId;
+            },
+            set: function(id) {
+                this.selectedLocationId = id;
+            },
+        },
+        lastScanned: {
+            get: function() {
+                return this.lastBarcodeScanned;
+            },
+            set: function(barcode) {
+                this.lastBarcodeScanned = barcode;
+            },
+        },
+        search_input_placeholder: function() {
             const placeholder = this.state.display_info.scan_placeholder;
             return _.isFunction(placeholder) ? placeholder.call(this) : placeholder;
         },
@@ -175,8 +193,7 @@ export var ScenarioBaseMixin = {
         /*
         Switch state to given one.
         */
-        state_to: function (state_key) {
-            const self = this;
+        state_to: function(state_key, query) {
             return this.$router
                 .push({
                     name: this.usage,
@@ -184,6 +201,7 @@ export var ScenarioBaseMixin = {
                         menu_id: this.menu_item_id,
                         state: state_key,
                     },
+                    query,
                 })
                 .catch(() => {
                     // see https://github.com/quasarframework/quasar/issues/5672
@@ -285,8 +303,11 @@ export var ScenarioBaseMixin = {
         _global_state_key: function (state_key) {
             return this.usage + "/" + state_key;
         },
-        wait_call: function (promise, callback) {
-            return promise.then(this.on_call_success, this.on_call_error);
+        wait_call: function(promise, callback = () => {}) {
+            return promise.then(result => {
+                callback(result);
+                this.on_call_success(result);
+            }, this.on_call_error);
         },
         on_state_enter: function () {
             const state = this._get_state_spec();

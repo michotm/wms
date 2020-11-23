@@ -249,6 +249,15 @@ class MessageAction(Component):
             ),
         }
 
+    def x_units_put_in_location(self, qty, product, location):
+        # TODO refactor with x_units_put_in_package
+        return {
+            "message_type": "success",
+            "body": _("{} {} put in {}").format(
+                qty, product.display_name, location.name
+            ),
+        }
+
     def cannot_move_something_in_picking_type(self):
         return {
             "message_type": "error",
@@ -520,4 +529,10 @@ class MessageAction(Component):
         return {
             "message_type": "warning",
             "body": _("No delivery package type available."),
+        }
+
+    def stock_issue_for_line(self, name):
+        return {
+            "message_type": "info",
+            "body": _("Stock issue declared for {}").format(name),
         }
