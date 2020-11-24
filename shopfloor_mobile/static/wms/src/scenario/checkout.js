@@ -336,6 +336,7 @@ const Checkout = {
                         scan_placeholder: "Scan product",
                     },
                     fields: [
+                        {path: "supplierCode", label: "Vendor code", klass: "loud"},
                         {path: "qty", label: "Quantity"},
                         {path: "qtyDone", label: "Done"},
                     ],
