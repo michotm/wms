@@ -27,6 +27,7 @@ Vue.component("detail-simple-product", {
             :options="{fields: fields}"
             :card_color="line_color(product)"
             :outlined="selected"
+<<<<<<< HEAD
         >
             <template v-slot:after_details>
                 <v-container>
@@ -35,6 +36,9 @@ Vue.component("detail-simple-product", {
                 </v-container>
             </template>
         </item-detail-card>
+=======
+        />
+>>>>>>> 553bdd34... show border when selected
     </v-row>
     `,
 });
