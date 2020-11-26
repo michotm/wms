@@ -33,6 +33,7 @@ const Checkout = {
                 v-on:addQuantity="on_user_confirm"
                 v-on:shippedFinished="state.shipFinished"
                 v-on:shippedUnfinished="state.shipUnfinished"
+                v-on:skipPack="state.skipPack"
                 />
             <checkout-scan-products
                 v-if="state_is('ship_products')"
@@ -292,8 +293,6 @@ const Checkout = {
             usage: "checkout",
             initial_state_key: "select_document",
             states: {
-                ship_products: {
-                },
                 scan_products: {
                     on_scan: scanned => {
                         const intInText = parseInt(scanned.text);
@@ -338,6 +337,10 @@ const Checkout = {
                             })
                         );
                         this.lastScanned = null;
+                    },
+                    skipPack: () => {
+                        this.lastScanned = null;
+                        this.state_to('select_document', {skip: true});
                     },
                     display_info: {
                         scan_placeholder: "Scan product",
