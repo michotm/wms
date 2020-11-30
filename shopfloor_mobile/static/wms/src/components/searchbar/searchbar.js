@@ -24,6 +24,7 @@ Vue.component("searchbar", {
             type: Boolean,
             default: true,
         },
+        refocusInput: Boolean,
     },
     methods: {
         search: function(e) {
@@ -38,6 +39,11 @@ Vue.component("searchbar", {
         reset: function() {
             this.entered = "";
         },
+        refocus: function() {
+            if (this.refocusInput) {
+                setTimeout(() => this.$refs.input.focus());
+            }
+        },
     },
 
     template: `
@@ -48,9 +54,11 @@ Vue.component("searchbar", {
       class="searchform"
       >
     <v-text-field
+      ref="input"
       required v-model="entered"
       :placeholder="input_placeholder"
       :autofocus="autofocus ? 'autofocus' : null"
+      @blur="refocus()"
       />
   </v-form>
   `,
