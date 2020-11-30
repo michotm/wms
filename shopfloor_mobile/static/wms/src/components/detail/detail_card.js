@@ -16,7 +16,7 @@ Vue.component("item-detail-card", {
             tile
             :class="{'main': opts.main, 'no-outline': opts.no_outline}"
             v-if="!_.isEmpty(record)"
-            @click="opts.on_click_action(record, field)"
+            @click="opts.on_click_action"
             :outlined="outlined"
             >
             <v-card-title v-if="!opts.no_title">

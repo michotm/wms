@@ -68,7 +68,7 @@ const Reception = {
                         {
                             name: "Vendeur 1",
                             picking_count: 2,
-                            id: 0,
+                            id: 7,
                         },
                         {
                             name: "Vendeur 2",
