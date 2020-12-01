@@ -102,7 +102,7 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
                 "carrier_id": carrier.id,
             }
         )
-        picking.move_lines.write({"date_expected": "2020-05-13"})
+        picking.move_lines.write({"date_deadline": "2020-05-13"})
         data = self.data_detail.picking_detail(picking)
         self.assert_schema(self.schema_detail.picking_detail(), data)
         expected = {

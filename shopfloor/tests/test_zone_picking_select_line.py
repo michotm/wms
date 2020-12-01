@@ -28,10 +28,10 @@ class ZonePickingSelectLineCase(ZonePickingCommonCase):
         )
         # change date to lines in the same location
         move1 = self.picking2.move_lines[0]
-        move1.write({"date_expected": today})
+        move1.write({"date_deadline": today})
         move1_line = move1.move_line_ids[0]
         move2 = self.picking2.move_lines[1]
-        move2.write({"date_expected": future})
+        move2.write({"date_deadline": future})
         move2_line = move2.move_line_ids[0]
 
         self.service.work.current_lines_order = "location"
@@ -40,8 +40,8 @@ class ZonePickingSelectLineCase(ZonePickingCommonCase):
         self.assertTrue(order_mapping[move1_line] < order_mapping[move2_line])
 
         # swap dates
-        move2.write({"date_expected": today})
-        move1.write({"date_expected": future})
+        move2.write({"date_deadline": today})
+        move1.write({"date_deadline": future})
         move_lines = self.service._find_location_move_lines()
         order_mapping = {line: i for i, line in enumerate(move_lines)}
         self.assertTrue(order_mapping[move1_line] > order_mapping[move2_line])
@@ -58,8 +58,8 @@ class ZonePickingSelectLineCase(ZonePickingCommonCase):
         self.assertTrue(order_mapping[move1_line] > len(move_lines) - 4)
         self.assertTrue(order_mapping[move2_line] > len(move_lines) - 3)
         # swap dates again
-        move2.write({"date_expected": future})
-        move1.write({"date_expected": today})
+        move2.write({"date_deadline": future})
+        move1.write({"date_deadline": today})
         # and increase priority
         self.picking2.move_lines.write({"priority": "3"})
         move_lines = self.service._find_location_move_lines()
