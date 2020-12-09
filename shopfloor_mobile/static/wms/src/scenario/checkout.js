@@ -302,7 +302,6 @@ const Checkout = {
                                 setting: true,
                             })
                         );
-                        this.state.bus.$emit('resetQuantity');
                         this.lastScanned = null;
                     },
                     shipFinished: () => {
