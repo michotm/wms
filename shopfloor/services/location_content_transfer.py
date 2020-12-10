@@ -353,17 +353,6 @@ class LocationContentTransfer(Component):
                 )
             pickings = new_moves.mapped("picking_id")
             move_lines = new_moves.move_line_ids
-            for move_line in move_lines:
-                if not move_line.location_dest_id.is_sublocation_of(
-                    menu.picking_type_ids.default_location_dest_id
-                ):
-                    savepoint.rollback()
-
-                    return self._response_for_start(
-                        message=self.msg_store.location_content_unable_to_transfer(
-                            location
-                        )
-                    )
 
         if self.work.menu.ignore_no_putaway_available and self._no_putaway_available(
             move_lines
@@ -421,8 +410,7 @@ class LocationContentTransfer(Component):
 
     def _set_all_destination_lines_and_done(self, pickings, move_lines, dest_location):
         self._write_destination_on_lines(move_lines, dest_location)
-        stock = self.actions_for("stock")
-        stock.validate_moves(move_lines.move_id)
+        pickings._action_done()
 
     def _lock_lines(self, lines):
         """Lock move lines"""
@@ -733,8 +721,9 @@ class LocationContentTransfer(Component):
             # (by splitting the current one)
             move_line.product_uom_qty = move_line.qty_done = quantity
             current_move = move_line.move_id
-            new_move_id = current_move._split(quantity)
-            new_move = self.env["stock.move"].browse(new_move_id)
+            new_move_vals = current_move._split(quantity)
+            new_move = self.env["stock.move"].create(new_move_vals)
+            new_move._action_confirm(merge=False)
             new_move.move_line_ids = move_line
             # Ensure that the remaining qty to process is reserved as before
             (new_move | current_move)._recompute_state()
@@ -767,13 +756,9 @@ class LocationContentTransfer(Component):
         package_level = self.env["stock.package_level"].browse(package_level_id)
         if not location.exists():
             return self._response_for_start(message=self.msg_store.record_not_found())
-        move_lines = self._find_transfer_move_lines(location)
         if package_level.exists():
-            pickings = move_lines.mapped("picking_id")
-            sorter = self.actions_for("location_content_transfer.sorter")
-            sorter.feed_pickings(pickings)
-            package_levels = sorter.package_levels()
-            package_level.shopfloor_postpone(move_lines, package_levels)
+            package_level.shopfloor_postponed = True
+        move_lines = self._find_transfer_move_lines(location)
         return self._response_for_start_single(move_lines.mapped("picking_id"))
 
     def postpone_line(self, location_id, move_line_id):
@@ -786,13 +771,9 @@ class LocationContentTransfer(Component):
         if not location.exists():
             return self._response_for_start(message=self.msg_store.record_not_found())
         move_line = self.env["stock.move.line"].browse(move_line_id)
-        move_lines = self._find_transfer_move_lines(location)
         if move_line.exists():
-            pickings = move_lines.mapped("picking_id")
-            sorter = self.actions_for("location_content_transfer.sorter")
-            sorter.feed_pickings(pickings)
-            package_levels = sorter.package_levels()
-            move_line.shopfloor_postpone(move_lines, package_levels)
+            move_line.shopfloor_postponed = True
+        move_lines = self._find_transfer_move_lines(location)
         return self._response_for_start_single(move_lines.mapped("picking_id"))
 
     def stock_out_package(self, location_id, package_level_id):
@@ -826,6 +807,9 @@ class LocationContentTransfer(Component):
             # split the move to process only the lines related to the package.
             package_move.split_other_move_lines(package_move_lines)
             lot = package_move.move_line_ids.lot_id
+            # We need to set qty_done at 0 because otherwise
+            # the move_line will not be deleted
+            package_move.move_line_ids.write({"qty_done": 0})
             package_move._do_unreserve()
             package_move._recompute_state()
             # Create an inventory at 0 in the move's source location
@@ -881,6 +865,9 @@ class LocationContentTransfer(Component):
         move = move_line.move_id
         package = move_line.package_id
         lot = move_line.lot_id
+        # We need to set qty_done at 0 because otherwise
+        # the move_line will not be deleted
+        move_line.qty_done = 0
         move._do_unreserve()
         move._recompute_state()
         # Create an inventory at 0 in the move's source location

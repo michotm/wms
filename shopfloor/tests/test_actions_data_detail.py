@@ -80,7 +80,7 @@ class ActionsDataDetailCaseBase(ActionsDataCaseBase):
         return dict(**self._expected_product(record), **detail)
 
 
-class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
+class ActionsDataDetailCase(ActionsDataDetailCaseBase):
     def test_data_location(self):
         location = self.stock_location
         data = self.data_detail.location_detail(location)
@@ -108,7 +108,7 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
                 "company_id": self.env.company.id,
                 "ref": "#FOO",
                 "removal_date": "2020-05-20",
-                "life_date": "2020-05-31",
+                "expiration_date": "2020-05-31",
             }
         )
         data = self.data_detail.lot_detail(lot)
@@ -139,14 +139,10 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
         pickings = lines.mapped("picking_id")
         expected = {
             "id": package.id,
-            "location": {
-                "id": package.location_id.id,
-                "name": package.location_id.display_name,
-            },
             "name": package.name,
             "move_line_count": 1,
             "packaging": self.data_detail.packaging(package.packaging_id),
-            "weight": 20.0,
+            "weight": 0,
             "pickings": self.data_detail.pickings(pickings),
             "move_lines": self.data_detail.move_lines(lines),
             "storage_type": {
@@ -158,16 +154,16 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
 
     def test_data_picking(self):
         picking = self.picking
-        carrier = picking.carrier_id.search([], limit=1)
+        carrier = picking.carrier_id.search([])[0]
         picking.write(
             {
                 "origin": "created by test",
                 "note": "read me",
-                "priority": "3",
+                "priority": "1",
                 "carrier_id": carrier.id,
             }
         )
-        picking.move_lines.write({"date_deadline": "2020-05-13"})
+        picking.move_lines.write({"date": "2020-05-13"})
         data = self.data_detail.picking_detail(picking)
         self.assert_schema(self.schema_detail.picking_detail(), data)
         expected = {
@@ -178,12 +174,12 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
             "origin": "created by test",
             "weight": 110.0,
             "partner": {"id": self.customer.id, "name": self.customer.name},
-            "carrier": {"id": picking.carrier_id.id, "name": picking.carrier_id.name},
-            "priority": "Very Urgent",
+            "priority": "Urgent",
             "operation_type": {
                 "id": picking.picking_type_id.id,
                 "name": picking.picking_type_id.name,
             },
+            "carrier": {"id": carrier.id, "name": carrier.name},
             "move_lines": self.data_detail.move_lines(picking.move_line_ids),
             "picking_type_code": "outgoing",
         }
@@ -209,14 +205,14 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
                 "id": move_line.package_id.id,
                 "name": move_line.package_id.name,
                 "move_line_count": 1,
-                "weight": 20.0,
+                "weight": 0.0,
                 "storage_type": None,
             },
             "package_dest": {
                 "id": result_package.id,
                 "name": result_package.name,
                 "move_line_count": 0,
-                "weight": 6.0,
+                "weight": 0.0,
                 "storage_type": None,
             },
             "location_src": self._expected_location(move_line.location_id),
@@ -267,7 +263,7 @@ class TestActionsDataDetailCase(ActionsDataDetailCaseBase):
                 "id": move_line.package_id.id,
                 "name": move_line.package_id.name,
                 "move_line_count": 1,
-                "weight": 30.0,
+                "weight": 0.0,
                 "storage_type": None,
             },
             "package_dest": {
