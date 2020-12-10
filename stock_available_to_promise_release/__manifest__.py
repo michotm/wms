@@ -17,8 +17,8 @@
         "views/res_config_settings.xml",
         "wizards/stock_release_views.xml",
     ],
-    "installable": True,
-    "license": "LGPL-3",
+    "installable": False,
+    "license": "AGPL-3",
     "application": False,
     "development_status": "Alpha",
 }
