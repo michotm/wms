@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-[![Runbot Status](https://runbot.odoo-community.org/runbot/badge/flat/285/13.0.svg)](https://runbot.odoo-community.org/runbot/repo/github-com-oca-wms-285)
-[![Build Status](https://travis-ci.com/OCA/wms.svg?branch=13.0)](https://travis-ci.com/OCA/wms)
-[![codecov](https://codecov.io/gh/OCA/wms/branch/13.0/graph/badge.svg)](https://codecov.io/gh/OCA/wms)
-[![Translation Status](https://translation.odoo-community.org/widgets/wms-13-0/-/svg-badge.svg)](https://translation.odoo-community.org/engage/wms-13-0/?utm_source=widget)
-
-<!-- /!\ do not modify above this line -->
-
-# WMS
-
-Warehouse Management System for advance logistic with Odoo
-=======
 [![Runbot Status](https://runbot.odoo-community.org/runbot/badge/flat/285/14.0.svg)](https://runbot.odoo-community.org/runbot/repo/github-com-oca-wms-285)
 [![Build Status](https://travis-ci.com/OCA/wms.svg?branch=14.0)](https://travis-ci.com/OCA/wms)
 [![codecov](https://codecov.io/gh/OCA/wms/branch/14.0/graph/badge.svg)](https://codecov.io/gh/OCA/wms)
@@ -20,7 +8,6 @@ Warehouse Management System for advance logistic with Odoo
 # wms
 
 TODO: add repo description.
->>>>>>> 25997d6a ([ADD] add copier and precommit file for V14)
 
 <!-- /!\ do not modify below this line -->
 
@@ -28,39 +15,34 @@ TODO: add repo description.
 
 [//]: # (addons)
 
-<<<<<<< HEAD
 Available addons
 ----------------
 addon | version | summary
 --- | --- | ---
-[delivery_carrier_preference](delivery_carrier_preference/) | 13.0.1.5.0 | Advanced selection of preferred shipping methods
-[delivery_carrier_warehouse](delivery_carrier_warehouse/) | 13.0.1.2.0 | Get delivery method used in sales orders from warehouse
-[delivery_preference_glue_stock_picking_group](delivery_preference_glue_stock_picking_group/) | 13.0.1.0.0 | Fix Delivery preferences module on grouping picking
-[sale_stock_available_to_promise_release](sale_stock_available_to_promise_release/) | 13.0.1.5.0 | Integration between Sales and Available to Promise Release
-[shopfloor](shopfloor/) | 13.0.3.1.0 | manage warehouse operations with barcode scanners
-[shopfloor_batch_automatic_creation](shopfloor_batch_automatic_creation/) | 13.0.1.0.1 | Create batch transfers for Cluster Picking
-[shopfloor_checkout_sync](shopfloor_checkout_sync/) | 13.0.1.0.0 | Glue module
-[shopfloor_mobile](shopfloor_mobile/) | 13.0.1.12.0 | Mobile frontend for WMS Shopfloor app
-[shopfloor_mobile_custom_example](shopfloor_mobile_custom_example/) | 13.0.1.0.0 | Show how to customize the Shopfloor app frontend.
-[shopfloor_packing_info](shopfloor_packing_info/) | 13.0.1.0.0 | Allows to predefine packing information messages per partner.
-[shopfloor_workstation](shopfloor_workstation/) | 13.0.1.1.0 | Manage warehouse workstation with barcode scanners
-[stock_available_to_promise_release](stock_available_to_promise_release/) | 13.0.1.11.0 | Release Operations based on available to promise
-[stock_available_to_promise_release_dynamic_routing](stock_available_to_promise_release_dynamic_routing/) | 13.0.1.0.1 | Glue between moves release and dynamic routing
-[stock_checkout_sync](stock_checkout_sync/) | 13.0.1.1.0 | Sync location for Checkout operations
-[stock_dynamic_routing](stock_dynamic_routing/) | 13.0.1.0.2 | Dynamic routing of stock moves
-[stock_dynamic_routing_checkout_sync](stock_dynamic_routing_checkout_sync/) | 13.0.1.1.0 | Glue module for tests when dynamic routing and checkout sync are used
-[stock_dynamic_routing_reserve_rule](stock_dynamic_routing_reserve_rule/) | 13.0.1.0.0 | Glue module between dynamic routing and reservation rules
-[stock_move_source_relocate](stock_move_source_relocate/) | 13.0.1.0.0 | Change source location of unavailable moves
-[stock_move_source_relocate_dynamic_routing](stock_move_source_relocate_dynamic_routing/) | 13.0.1.1.1 | Glue module
-[stock_picking_type_shipping_policy](stock_picking_type_shipping_policy/) | 13.0.1.0.0 | Define different shipping policies according to picking type
-[stock_picking_type_shipping_policy_group_by](stock_picking_type_shipping_policy_group_by/) | 13.0.1.0.0 | Glue module for Picking Type Shipping Policy and Group Transfers by Partner and Carrier
-[stock_reception_screen](stock_reception_screen/) | 13.0.1.5.1 | Dedicated screen to receive/scan goods.
-[stock_storage_type](stock_storage_type/) | 13.0.1.10.0 | Manage packages and locations storage types
-[stock_storage_type_buffer](stock_storage_type_buffer/) | 13.0.1.2.0 | Exclude storage locations from put-away if their buffer is full
-[stock_storage_type_putaway_abc](stock_storage_type_putaway_abc/) | 13.0.1.1.0 | Advanced storage strategy ABC for WMS
-=======
-This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
->>>>>>> 25997d6a ([ADD] add copier and precommit file for V14)
+[shopfloor](shopfloor/) | 13.0.1.5.1 | manage warehouse operations with barcode scanners
+[shopfloor_batch_automatic_creation](shopfloor_batch_automatic_creation/) | 13.0.1.0.0 | Create batch transfers for Cluster Picking
+
+
+Unported addons
+---------------
+addon | version | summary
+--- | --- | ---
+[delivery_carrier_preference](delivery_carrier_preference/) | 13.0.1.5.0 (unported) | Advanced selection of preferred shipping methods
+[delivery_carrier_warehouse](delivery_carrier_warehouse/) | 13.0.1.2.0 (unported) | Get delivery method used in sales orders from warehouse
+[sale_stock_available_to_promise_release](sale_stock_available_to_promise_release/) | 13.0.1.3.0 (unported) | Integration between Sales and Available to Promise Release
+[shopfloor_checkout_sync](shopfloor_checkout_sync/) | 13.0.1.0.0 (unported) | Glue module
+[shopfloor_mobile](shopfloor_mobile/) | 13.0.1.6.1 (unported) | Mobile frontend for WMS Shopfloor app
+[shopfloor_mobile_custom_example](shopfloor_mobile_custom_example/) | 13.0.1.0.0 (unported) | Show how to customize the Shopfloor app frontend.
+[stock_available_to_promise_release](stock_available_to_promise_release/) | 13.0.1.9.2 (unported) | Release Operations based on available to promise
+[stock_available_to_promise_release_dynamic_routing](stock_available_to_promise_release_dynamic_routing/) | 13.0.1.0.1 (unported) | Glue between moves release and dynamic routing
+[stock_dynamic_routing](stock_dynamic_routing/) | 13.0.1.0.1 (unported) | Dynamic routing of stock moves
+[stock_move_source_relocate](stock_move_source_relocate/) | 13.0.1.0.0 (unported) | Change source location of unavailable moves
+[stock_move_source_relocate_dynamic_routing](stock_move_source_relocate_dynamic_routing/) | 13.0.1.0.0 (unported) | Glue module
+[stock_picking_type_shipping_policy](stock_picking_type_shipping_policy/) | 13.0.1.0.0 (unported) | Define different shipping policies according to picking type
+[stock_picking_type_shipping_policy_group_by](stock_picking_type_shipping_policy_group_by/) | 13.0.1.0.0 (unported) | Glue module for Picking Type Shipping Policy and Group Transfers by Partner and Carrier
+[stock_reception_screen](stock_reception_screen/) | 13.0.1.1.2 (unported) | Dedicated screen to receive/scan goods.
+[stock_storage_type](stock_storage_type/) | 13.0.1.6.0 (unported) | Manage packages and locations storage types
+[stock_storage_type_putaway_abc](stock_storage_type_putaway_abc/) | 13.0.1.1.0 (unported) | Advanced storage strategy ABC for WMS
 
 [//]: # (end addons)
 
