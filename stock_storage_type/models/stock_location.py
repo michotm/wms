@@ -386,8 +386,10 @@ class StockLocation(models.Model):
                 ),
             ]
         )
-        pertinent_loc_s_t_domain = compatible_locations._domain_location_storage_type_constraints(  # noqa
-            package_storage_type, quants, products
+        pertinent_loc_s_t_domain = (
+            compatible_locations._domain_location_storage_type_constraints(  # noqa
+                package_storage_type, quants, products
+            )
         )
 
         pertinent_loc_storage_types = LocStorageType.search(pertinent_loc_s_t_domain)

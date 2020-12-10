@@ -35,7 +35,8 @@ class UserCase(CommonMenuCase):
 
         response = self.service.dispatch("menu")
         self.assert_response(
-            response, data={"menus": [self._data_for_menu_item(menu)]},
+            response,
+            data={"menus": [self._data_for_menu_item(menu)]},
         )
 
     def test_user_info(self):
