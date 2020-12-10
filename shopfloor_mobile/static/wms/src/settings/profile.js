@@ -5,7 +5,7 @@
  */
 
 export var Profile = Vue.component("profile", {
-    data: function() {
+    data: function () {
         return {
             current_profile_id: this.$root.has_profile ? this.$root.profile.id : null,
             profile_selected: false,
@@ -46,11 +46,14 @@ export var Profile = Vue.component("profile", {
         </Screen>
     `,
     methods: {
-        on_select: function(selected) {
+        on_select: function (selected) {
             if (!_.isEmpty(selected)) {
                 this.$root.trigger("profile:selected", selected, true);
                 this.$root.$router.push({name: "home"});
             }
+        },
+        logout: function () {
+            this.$root.logout();
         },
     },
 });

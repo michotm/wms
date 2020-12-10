@@ -29,18 +29,47 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         cls.picking_z = cls._create_picking(lines=[(cls.product_z, 40)])
         cls._update_qty_in_location(cls.zone_sublocation1, cls.product_z, 32)
 
-    def setUp(self):
-        super().setUp()
-        self.service.work.current_picking_type = self.picking1.picking_type_id
-
     def test_unload_set_destination_wrong_parameters(self):
         zone_location = self.zone_location
         picking_type = self.picking1.picking_type_id
+        move_line = self.picking1.move_line_ids
+        package = move_line.package_id
         response = self.service.dispatch(
             "unload_set_destination",
-            params={"package_id": 1234567890, "barcode": "BARCODE"},
+            params={
+                "zone_location_id": 1234567890,
+                "picking_type_id": picking_type.id,
+                "package_id": package.id,
+                "barcode": "BARCODE",
+            },
         )
-        move_lines = self.service._find_location_move_lines()
+        self.assert_response_start(
+            response,
+            message=self.service.msg_store.record_not_found(),
+        )
+        response = self.service.dispatch(
+            "unload_set_destination",
+            params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": 1234567890,
+                "package_id": package.id,
+                "barcode": "BARCODE",
+            },
+        )
+        self.assert_response_start(
+            response,
+            message=self.service.msg_store.record_not_found(),
+        )
+        response = self.service.dispatch(
+            "unload_set_destination",
+            params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
+                "package_id": 1234567890,
+                "barcode": "BARCODE",
+            },
+        )
+        move_lines = self.service._find_location_move_lines(zone_location, picking_type)
         self.assert_response_select_line(
             response,
             zone_location,
@@ -55,11 +84,20 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         move_line = self.picking1.move_line_ids
         # set the destination package
         self.service._set_destination_package(
-            move_line, move_line.product_uom_qty, self.free_package,
+            zone_location,
+            picking_type,
+            move_line,
+            move_line.product_uom_qty,
+            self.free_package,
         )
         response = self.service.dispatch(
             "unload_set_destination",
-            params={"package_id": self.free_package.id, "barcode": "UNKNOWN"},
+            params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
+                "package_id": self.free_package.id,
+                "barcode": "UNKNOWN",
+            },
         )
         self.assert_response_unload_set_destination(
             response,
@@ -75,11 +113,17 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         move_line = self.picking1.move_line_ids
         # set the destination package
         self.service._set_destination_package(
-            move_line, move_line.product_uom_qty, self.free_package,
+            zone_location,
+            picking_type,
+            move_line,
+            move_line.product_uom_qty,
+            self.free_package,
         )
         response = self.service.dispatch(
             "unload_set_destination",
             params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
                 "package_id": self.free_package.id,
                 "barcode": self.customer_location.barcode,
             },
@@ -99,11 +143,17 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         move_line[0].move_id.location_dest_id = self.packing_sublocation_a
         # set the destination package
         self.service._set_destination_package(
-            move_line, move_line.product_uom_qty, self.free_package,
+            zone_location,
+            picking_type,
+            move_line,
+            move_line.product_uom_qty,
+            self.free_package,
         )
         response = self.service.dispatch(
             "unload_set_destination",
             params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
                 "package_id": self.free_package.id,
                 "barcode": self.packing_sublocation_b.barcode,
             },
@@ -144,12 +194,18 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         )
         # set the destination package
         self.service._set_destination_package(
-            move_line, move_line.product_uom_qty, self.free_package,
+            zone_location,
+            picking_type,
+            move_line,
+            move_line.product_uom_qty,
+            self.free_package,
         )
         move_line.location_dest_id = packing_sublocation1
         response = self.service.dispatch(
             "unload_set_destination",
             params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
                 "package_id": self.free_package.id,
                 "barcode": packing_sublocation2.barcode,
             },
@@ -182,11 +238,17 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         )
         # set the destination package
         self.service._set_destination_package(
-            move_line, move_line.product_uom_qty, self.free_package,
+            zone_location,
+            picking_type,
+            move_line,
+            move_line.product_uom_qty,
+            self.free_package,
         )
         response = self.service.dispatch(
             "unload_set_destination",
             params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
                 "package_id": self.free_package.id,
                 "barcode": packing_sublocation.barcode,
                 "confirmation": True,
@@ -196,7 +258,7 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         self.assertEqual(move_line.location_dest_id, packing_sublocation)
         self.assertEqual(move_line.move_id.state, "done")
         # check response
-        move_lines = self.service._find_location_move_lines()
+        move_lines = self.service._find_location_move_lines(zone_location, picking_type)
         self.assert_response_select_line(
             response,
             zone_location,
@@ -217,7 +279,11 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
             move_lines, self.free_package | self.another_package
         ):
             self.service._set_destination_package(
-                move_line, move_line.product_uom_qty, package_dest,
+                zone_location,
+                picking_type,
+                move_line,
+                move_line.product_uom_qty,
+                package_dest,
             )
         free_package_line = move_lines.filtered(
             lambda l: l.result_package_id == self.free_package
@@ -228,6 +294,8 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         response = self.service.dispatch(
             "unload_set_destination",
             params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
                 "package_id": self.free_package.id,
                 "barcode": self.packing_location.barcode,
             },
@@ -243,7 +311,7 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         self.assertEqual(self.picking5.move_line_ids, another_package_line)
 
         # check response
-        buffer_line = self.service._find_buffer_move_lines()
+        buffer_line = self.service._find_buffer_move_lines(zone_location, picking_type)
         completion_info = self.service.actions_for("completion.info")
         completion_info_popup = completion_info.popup(buffer_line)
         self.assert_response_unload_single(
@@ -275,11 +343,17 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         )
         # set the destination package
         self.service._set_destination_package(
-            move_line, move_line.product_uom_qty, self.free_package,
+            zone_location,
+            picking_type,
+            move_line,
+            move_line.product_uom_qty,
+            self.free_package,
         )
         response = self.service.dispatch(
             "unload_set_destination",
             params={
+                "zone_location_id": zone_location.id,
+                "picking_type_id": picking_type.id,
                 "package_id": self.free_package.id,
                 "barcode": packing_sublocation.barcode,
                 "confirmation": True,
@@ -287,18 +361,16 @@ class ZonePickingUnloadSetDestinationCase(ZonePickingCommonCase):
         )
         # check data
         # move line has been moved to a new picking
-        # move line has been validated in the current picking
-        self.assertEqual(move_line.move_id.picking_id, self.picking_z)
-        # the new picking (backorder) contains a new line w/ the rest of the qty
+        self.assertEqual(move_line.move_id.picking_id, self.picking_z.backorder_ids[0])
+        # the old picking contains a new line w/ the rest of the qty
         # that couldn't be processed
-        backorder = self.picking_z.backorder_ids[0]
-        self.assertEqual(backorder.move_lines[0].product_uom_qty, 8)
-        self.assertEqual(backorder.state, "confirmed")
+        self.assertEqual(self.picking_z.move_lines[0].product_uom_qty, 8)
+        self.assertEqual(self.picking_z.state, "confirmed")
         # the line has been processed
         self.assertEqual(move_line.location_dest_id, packing_sublocation)
         self.assertEqual(move_line.move_id.state, "done")
         # check response
-        move_lines = self.service._find_location_move_lines()
+        move_lines = self.service._find_location_move_lines(zone_location, picking_type)
         self.assert_response_select_line(
             response,
             zone_location,

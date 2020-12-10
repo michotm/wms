@@ -5,6 +5,7 @@
  */
 
 export var SettingsControlPanel = Vue.component("settings-control-panel", {
+<<<<<<< HEAD
     data: function() {
         return {
             profile_name: this.$root.has_profile ? this.$root.profile.name : "?",
@@ -28,6 +29,8 @@ export var SettingsControlPanel = Vue.component("settings-control-panel", {
             );
             return language ? language.name : "?";
         },
+    data: function () {
+        return {};
     },
     template: `
         <Screen :screen_info="{title: $t('screen.settings.home.title'), klass: 'settings settings-control-panel'}">

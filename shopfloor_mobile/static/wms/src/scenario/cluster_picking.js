@@ -112,7 +112,7 @@ const ClusterPicking = {
         </Screen>
     `,
     computed: {
-        manual_select_picking_fields: function() {
+        manual_select_picking_fields: function () {
             return [
                 {path: "picking_count", label: "Operations"},
                 {path: "move_line_count", label: "Lines"},
@@ -120,7 +120,7 @@ const ClusterPicking = {
         },
     },
     methods: {
-        screen_title: function() {
+        screen_title: function () {
             if (_.isEmpty(this.current_batch()) || this.state_is("confirm_start"))
                 return this.menu_item().name;
             let title = this.current_batch().name;
@@ -130,17 +130,17 @@ const ClusterPicking = {
             }
             return title;
         },
-        current_batch: function() {
+        current_batch: function () {
             return this.state_get_data("confirm_start");
         },
-        current_picking: function() {
+        current_picking: function () {
             const data = this.state_get_data("start_line") || {};
             if (!data.picking) {
                 return null;
             }
             return data.picking;
         },
-        current_doc: function() {
+        current_doc: function () {
             const picking = this.current_picking();
             if (!picking) {
                 return {};
@@ -150,7 +150,7 @@ const ClusterPicking = {
                 identifier: picking.name,
             };
         },
-        action_full_bin: function() {
+        action_full_bin: function () {
             this.wait_call(
                 this.odoo.call("prepare_unload", {
                     picking_batch_id: this.current_batch().id,
@@ -180,7 +180,7 @@ const ClusterPicking = {
             return location_src;
         },
     },
-    data: function() {
+    data: function () {
         // TODO: add a title to each screen
         return {
             usage: "cluster_picking",
@@ -188,10 +188,10 @@ const ClusterPicking = {
             scan_destination_qty: 0,
             states: {
                 start: {
-                    on_get_work: evt => {
+                    on_get_work: (evt) => {
                         this.wait_call(this.odoo.call("find_batch"));
                     },
-                    on_manual_selection: evt => {
+                    on_manual_selection: (evt) => {
                         this.wait_call(this.odoo.call("list_batch"));
                     },
                 },
@@ -200,7 +200,7 @@ const ClusterPicking = {
                         this.state_to("start");
                         this.reset_notification();
                     },
-                    on_select: selected => {
+                    on_select: (selected) => {
                         this.wait_call(
                             this.odoo.call("select", {
                                 picking_batch_id: selected.id,
@@ -235,7 +235,7 @@ const ClusterPicking = {
                             this.odoo.call("unassign", {
                                 picking_batch_id: this.current_batch().id,
                             })
-                        ).then(function() {
+                        ).then(function () {
                             self.state_reset_data_all();
                         });
                     },
@@ -399,7 +399,7 @@ const ClusterPicking = {
                     },
                     // Here we have to use some info sent back from `select`
                     // or from `find_batch` that we pass to scan line
-                    on_scan: scanned => {
+                    on_scan: (scanned) => {
                         this.wait_call(
                             this.odoo.call("scan_line", {
                                 picking_batch_id: this.current_batch().id,
@@ -409,7 +409,7 @@ const ClusterPicking = {
                         );
                     },
                     // Additional actions
-                    on_action: action => {
+                    on_action: (action) => {
                         this.state["on_" + action].call(this);
                     },
                     on_action_full_bin: () => {
@@ -446,10 +446,10 @@ const ClusterPicking = {
                             "start_line"
                         ).quantity;
                     },
-                    on_qty_edit: qty => {
+                    on_qty_edit: (qty) => {
                         this.scan_destination_qty = parseInt(qty, 10);
                     },
-                    on_scan: scanned => {
+                    on_scan: (scanned) => {
                         this.wait_call(
                             this.odoo.call("scan_destination", {
                                 picking_batch_id: this.current_batch().id,
@@ -464,7 +464,7 @@ const ClusterPicking = {
                     },
                 },
                 zero_check: {
-                    on_action: action => {
+                    on_action: (action) => {
                         this.state["on_" + action].call(this);
                     },
                     on_action_confirm_zero: () => {
@@ -515,7 +515,7 @@ const ClusterPicking = {
                         title: "Unload all bins confirm",
                         scan_placeholder: "Scan location",
                     },
-                    on_user_confirm: answer => {
+                    on_user_confirm: (answer) => {
                         // TODO: check if this used
                         // -> no flag is set to enable the confirmation dialog,
                         // we only display a message, unlike `confirm_start`
@@ -540,7 +540,7 @@ const ClusterPicking = {
                         title: "Unload single bin",
                         scan_placeholder: "Scan location",
                     },
-                    on_scan: scanned => {
+                    on_scan: (scanned) => {
                         this.wait_call(
                             this.odoo.call("unload_scan_pack", {
                                 picking_batch_id: this.current_batch().id,
@@ -555,7 +555,7 @@ const ClusterPicking = {
                         title: "Set destination",
                         scan_placeholder: "Scan location",
                     },
-                    on_scan: scanned => {
+                    on_scan: (scanned) => {
                         this.wait_call(
                             this.odoo.call("unload_scan_destination", {
                                 picking_batch_id: this.current_batch().id,
@@ -570,7 +570,7 @@ const ClusterPicking = {
                         title: "Set destination confirm",
                         scan_placeholder: "Scan location",
                     },
-                    on_scan: scanned => {
+                    on_scan: (scanned) => {
                         this.wait_call(
                             this.odoo.call("unload_scan_destination", {
                                 picking_batch_id: this.current_batch().id,
@@ -586,7 +586,7 @@ const ClusterPicking = {
                         title: "Change pack or lot",
                         scan_placeholder: "Scan pack or lot",
                     },
-                    on_scan: scanned => {
+                    on_scan: (scanned) => {
                         this.wait_call(
                             this.odoo.call("change_pack_lot", {
                                 picking_batch_id: this.current_batch().id,

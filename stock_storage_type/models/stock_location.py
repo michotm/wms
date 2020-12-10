@@ -200,10 +200,8 @@ class StockLocation(models.Model):
 
     @api.depends(
         "quant_ids.quantity",
-        "out_move_line_ids.qty_done",
         "in_move_ids",
         "in_move_line_ids",
-        "allowed_location_storage_type_ids.only_empty",
     )
     def _compute_location_is_empty(self):
         for rec in self:
@@ -443,8 +441,10 @@ class StockLocation(models.Model):
                 ),
             ]
         )
-        pertinent_loc_s_t_domain = compatible_locations._domain_location_storage_type_constraints(  # noqa
-            package_storage_type, quants, products
+        pertinent_loc_s_t_domain = (
+            compatible_locations._domain_location_storage_type_constraints(  # noqa
+                package_storage_type, quants, products
+            )
         )
 
         pertinent_loc_storage_types = LocStorageType.search(pertinent_loc_s_t_domain)

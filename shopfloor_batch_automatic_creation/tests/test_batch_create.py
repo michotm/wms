@@ -149,5 +149,7 @@ class TestBatchCreate(CommonCase):
 
         data = self.data.picking_batch(batch, with_pickings=True)
         self.assert_response(
-            response, next_state="confirm_start", data=data,
+            response,
+            next_state="confirm_start",
+            data=data,
         )
