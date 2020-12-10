@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [![Runbot Status](https://runbot.odoo-community.org/runbot/badge/flat/285/13.0.svg)](https://runbot.odoo-community.org/runbot/repo/github-com-oca-wms-285)
 [![Build Status](https://travis-ci.com/OCA/wms.svg?branch=13.0)](https://travis-ci.com/OCA/wms)
 [![codecov](https://codecov.io/gh/OCA/wms/branch/13.0/graph/badge.svg)](https://codecov.io/gh/OCA/wms)
@@ -8,6 +9,18 @@
 # WMS
 
 Warehouse Management System for advance logistic with Odoo
+=======
+[![Runbot Status](https://runbot.odoo-community.org/runbot/badge/flat/285/14.0.svg)](https://runbot.odoo-community.org/runbot/repo/github-com-oca-wms-285)
+[![Build Status](https://travis-ci.com/OCA/wms.svg?branch=14.0)](https://travis-ci.com/OCA/wms)
+[![codecov](https://codecov.io/gh/OCA/wms/branch/14.0/graph/badge.svg)](https://codecov.io/gh/OCA/wms)
+[![Translation Status](https://translation.odoo-community.org/widgets/wms-14-0/-/svg-badge.svg)](https://translation.odoo-community.org/engage/wms-14-0/?utm_source=widget)
+
+<!-- /!\ do not modify above this line -->
+
+# wms
+
+TODO: add repo description.
+>>>>>>> 25997d6a ([ADD] add copier and precommit file for V14)
 
 <!-- /!\ do not modify below this line -->
 
@@ -15,6 +28,7 @@ Warehouse Management System for advance logistic with Odoo
 
 [//]: # (addons)
 
+<<<<<<< HEAD
 Available addons
 ----------------
 addon | version | summary
@@ -44,6 +58,9 @@ addon | version | summary
 [stock_storage_type](stock_storage_type/) | 13.0.1.10.0 | Manage packages and locations storage types
 [stock_storage_type_buffer](stock_storage_type_buffer/) | 13.0.1.2.0 | Exclude storage locations from put-away if their buffer is full
 [stock_storage_type_putaway_abc](stock_storage_type_putaway_abc/) | 13.0.1.1.0 | Advanced storage strategy ABC for WMS
+=======
+This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
+>>>>>>> 25997d6a ([ADD] add copier and precommit file for V14)
 
 [//]: # (end addons)
 
