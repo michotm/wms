@@ -8,9 +8,6 @@ setuptools.setup(
     description="Meta package for oca-wms Odoo addons",
     version=version,
     install_requires=[
-        'odoo13-addon-delivery_carrier_preference',
-        'odoo13-addon-delivery_carrier_warehouse',
-        'odoo13-addon-sale_stock_available_to_promise_release',
         'odoo13-addon-shopfloor',
         'odoo13-addon-shopfloor_batch_automatic_creation',
         'odoo13-addon-shopfloor_checkout_sync',
