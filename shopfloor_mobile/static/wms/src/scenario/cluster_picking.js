@@ -249,7 +249,7 @@ const ClusterPicking = {
                             }
                         }
                         else {
-                            if (!move_line.id && last_move_line) {
+                            if (!move_line.id && last_move_line.id) {
                                 this.lastScanned = null;
 
                                 return this.wait_call(
