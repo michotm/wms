@@ -237,6 +237,21 @@
             type="module"
         />
         <script
+            id="script_scenario_single_pack_receipt"
+            t-attf-src="/shopfloor_mobile/assets/src/scenario/single_pack_receipt.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="script_scenario_single_lot_transfer"
+            t-attf-src="/shopfloor_mobile/assets/src/scenario/single_lot_transfer.js?v=#{app_version}"
+            type="module"
+        />
+        <script
+            id="script_scenario_single_lot_mrp_transfer"
+            t-attf-src="/shopfloor_mobile/assets/src/scenario/single_lot_mrp_transfer.js?v=#{app_version}"
+            type="module"
+        />
+        <script
             id="script_scenario_cluster_picking"
             t-attf-src="/shopfloor_mobile/assets/src/scenario/cluster_picking.js?v=#{app_version}"
             type="module"
