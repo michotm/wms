@@ -56,11 +56,11 @@ class BaseShopfloorService(AbstractComponent):
     # can be overridden to disable logging of requests to DB
     _log_calls_in_db = True
 
-    def dispatch(self, method_name, _id=None, params=None):
+    def dispatch(self, method_name, *args, params=None):
         self._validate_headers_update_work_context(request, method_name)
-        if not self._db_logging_active():
-            return super().dispatch(method_name, _id=_id, params=params)
-        return self._dispatch_with_db_logging(method_name, _id=_id, params=params)
+        # if not self._db_logging_active():
+        return super().dispatch(method_name, *args, params=params)
+        # return self._dispatch_with_db_logging(method_name, *args, params=params)
 
     def _db_logging_active(self):
         return (
