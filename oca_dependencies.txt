@@ -1,8 +1,9 @@
-# NOTE: MQT=PIP is on in this repo
+# See https://github.com/OCA/odoo-community.org/blob/master/website/Contribution/CONTRIBUTING.rst#oca_dependencies-txt
 
 product-attribute
-server-tools
-stock-logistics-workflow
-web
 rest-framework
 server-auth
+server-tools
+stock-logistics-workflow
+stock-logistics-warehouse
+web
