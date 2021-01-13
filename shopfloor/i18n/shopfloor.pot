@@ -1334,8 +1334,8 @@ msgid "User"
 msgstr ""
 
 #. module: shopfloor
-#: model:ir.model.fields,help:shopfloor.field_shopfloor_menu__profile_ids
-msgid "Visible for these profiles"
+#: model:ir.model.fields,help:shopfloor.field_shopfloor_menu__profile_id
+msgid "Visible on this profile only"
 msgstr ""
 
 #. module: shopfloor
