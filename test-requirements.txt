@@ -21,5 +21,5 @@ odoo14-addon-stock_picking_completion_info @ git+https://github.com/OCA/wms@refs
 odoo14-addon-stock_storage_type @ git+https://github.com/OCA/wms@refs/pull/123/head#subdirectory=setup/stock_storage_type
 
 odoo14-addon-base_m2m_custom_field @ git+https://github.com/OCA/server-tools@refs/pull/1992/head#subdirectory=setup/base_m2m_custom_field
-odoo14-addon-base_jsonify @ git+https://github.com/OCA/server-tools@refs/pull/1992/head#subdirectory=setup/base_jsonify
+odoo14-addon-base_jsonify @ git+https://github.com/OCA/server-tools@refs/pull/1911/head#subdirectory=setup/base_jsonify
 odoo14-addon-web_domain_field @ git+https://github.com/OCA/web@refs/pull/1778/head#subdirectory=setup/web_domain_field
