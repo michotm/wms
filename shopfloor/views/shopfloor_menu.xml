@@ -85,7 +85,6 @@
                 <field name="scenario" />
                 <field name="profile_id" />
                 <field name="picking_type_ids" />
-                <field name="profile_id" />
                 <separator />
                 <filter
                     string="Archived"
