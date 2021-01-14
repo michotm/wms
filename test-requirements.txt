@@ -23,3 +23,4 @@ odoo14-addon-stock_storage_type @ git+https://github.com/OCA/wms@refs/pull/123/h
 odoo14-addon-base_m2m_custom_field @ git+https://github.com/OCA/server-tools@refs/pull/1992/head#subdirectory=setup/base_m2m_custom_field
 odoo14-addon-base_jsonify @ git+https://github.com/OCA/server-tools@refs/pull/1911/head#subdirectory=setup/base_jsonify
 odoo14-addon-web_domain_field @ git+https://github.com/OCA/web@refs/pull/1778/head#subdirectory=setup/web_domain_field
+odoo14-addon-base_rest @ git+https://github.com/akretion/rest-framework.git@14.0-mig-base_rest#subdirectory=setup/base_rest
