@@ -3,6 +3,7 @@
 from odoo import _, fields
 from odoo.osv import expression
 
+from functools import wraps
 from odoo.addons.base_rest.components.service import to_bool, to_int
 from odoo.addons.component.core import Component
 
@@ -47,6 +48,7 @@ class TooMuchProductInCommandError(MessageBasedError):
         }
 
 def response_decorator(called_func):
+    @wraps(called_func)
     def decorated_response(*args, **kwargs):
         instance = args[0]
         try:
