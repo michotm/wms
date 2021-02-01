@@ -10,33 +10,63 @@ import {process_registry} from "../services/process_registry.js";
 const Reception = {
     mixins: [ScenarioBaseMixin],
     template: `
-        <Scr :screen_info="screen_info">
+        <Screen :screen_info="screen_info">
             <choosing-reception-contact
-                :stateData="offlineListOfContacts"
+                v-if="state_is('choosingContact')"
+                v-on:select-contact="state.onSelect"
+                :stateData="state"
+                />
+            <choosing-reception-picking
+                v-if="state_is('choosingPicking')"
+                :stateData="state"
                 />
         </Screen>
     `,
-    data: () => {
+    data: function() {
         return {
             usage: "reception",
-            initial_state_key: "start",
+            initial_state_key: "choosingContact",
             scan_destination_qty: 0,
             states: {
-                start: {},
-            },
-            offlineListOfContacts: {
-                contacts: [
-                    {
-                        contact: "Vendeur 1",
-                        receipt_count: 2,
-                        code: "V1",
+                choosingContact: {
+                    onSelect: () => {
+                        this.wait_call(
+                            this.odoo.call('list_stock_picking'),
+                            (result) => {
+                                result.data.choosingPicking = result.data[result.next_state];
+                                delete result.data[result.next_state];
+                                result.next_state = "choosingPicking"
+                                this.on_call_success(result);
+                            },
+                        );
                     },
-                    {
-                        contact: "Vendeur 2",
-                        receipt_count: 10,
-                        code: "V2",
-                    },
-                ],
+                    fields: [
+                        {
+                            label: "Total receipt",
+                            path: "picking_count",
+                        },
+                    ],
+                    contacts: [
+                        {
+                            name: "Vendeur 1",
+                            picking_count: 2,
+                            id: 0,
+                        },
+                        {
+                            name: "Vendeur 2",
+                            picking_count: 1,
+                            id: 1,
+                        },
+                    ],
+                },
+                choosingPicking: {
+                    fields: [
+                        {
+                            label: "Partner",
+                            path: "partner.name",
+                        },
+                    ],
+                },
             },
         };
     },

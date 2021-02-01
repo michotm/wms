@@ -5,11 +5,11 @@
  */
 
 Vue.component("contact-detail", {
-    props: ["contact"],
+    props: ["contact", "fields"],
     template: `
         <item-detail-card
-            :record=""
-            :options=""
+            :record="contact"
+            :options="{fields: fields, full_detail: true, on_title_action: () => $emit('select-contact', contact.id)}"
             />
     `,
-}),
+});
