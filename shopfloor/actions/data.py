@@ -63,7 +63,11 @@ class DataAction(Component):
 
     @property
     def _partner_parser(self):
-        return self._simple_record_parser()
+        return [
+            "id",
+            "name",
+            ("picking_ids:pickings", ["id"])
+        ]
 
     @ensure_model("stock.location")
     def location(self, record, **kw):

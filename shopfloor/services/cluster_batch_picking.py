@@ -1,7 +1,7 @@
 
 # Copyright 2020 Camptocamp SA (http://www.camptocamp.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-from functools import wraps, reduce
+from functools import reduce
 from odoo import _, fields
 from odoo.osv import expression
 
@@ -10,91 +10,16 @@ from odoo.addons.component.core import Component
 
 from .service import to_float
 
-class ScenarioError(Exception):
-    def __init__(self, response):
-        super().__init__("")
-        self.response = response
-
-class StateBasedError(Exception):
-    def __init__(self, state, data):
-        super().__init__("")
-        self.state = state
-        self.data = data
-
-class MessageNameBasedError(StateBasedError):
-    def __init__(self, state, data, message_name, **kw):
-        super().__init__(state, data)
-        self.message_name = message_name
-        self.kw = kw
-
-class MessageBasedError(StateBasedError):
-    def __init__(self, state, data, message):
-        super().__init__(state, data)
-        self.message = message
-
-class BatchDoesNotExistError(Exception):
-    pass
-
-class OperationNotFoundError(MessageNameBasedError):
-    def __init__(self, state, data):
-        super().__init__(state, data, message_name="operation_not_found")
-
-class BarcodeNotFoundError(MessageNameBasedError):
-    def __init__(self, state, data):
-        super().__init__(state, data, message_name="barcode_not_found")
-
-class UnableToPickMoreError(MessageNameBasedError):
-    def __init__(self, state, data, **kw):
-        super().__init__(state, data, message_name="unable_to_pick_more", **kw)
-
-class DestLocationNotAllowed(MessageNameBasedError):
-    def __init__(self, state, data):
-        super().__init__(state, data, message_name="dest_location_not_allowed")
-
-class LocationNotFound(MessageNameBasedError):
-    def __init__(self, state, data):
-        super().__init__(state, data, message_name="no_location_found")
-
-class ProductNotInSource(MessageBasedError):
-    def __init__(self, state, data):
-        message = {
-            "message_type": "error",
-            "body": "Product is not in source location",
-        }
-        super().__init__(state, data, message)
-
-class TooMuchProductInCommandError(MessageBasedError):
-    def __init__(self, state, data):
-        message = {
-            "message_type": "error",
-            "body": "Too much product in command",
-        }
-        super().__init__(state, data, message)
-
-def response_decorator(called_func):
-
-    @wraps(called_func)
-    def decorated_response(*args, **kwargs):
-        instance = args[0]
-        try:
-            return called_func(*args, **kwargs)
-        except BatchDoesNotExistError:
-            return instance._response_batch_does_not_exist()
-        except MessageNameBasedError as e:
-            message = getattr(instance.msg_store, e.message_name)(**(e.kw))
-            return instance._response(
-                next_state=e.state,
-                data=e.data,
-                message=message
-            )
-        except MessageBasedError as e:
-            return instance._response(
-                next_state=e.state,
-                data=e.data,
-                message=e.message
-            )
-
-    return decorated_response
+from .exception import (
+    BatchDoesNotExistError,
+    OperationNotFoundError,
+    BarcodeNotFoundError,
+    UnableToPickMoreError,
+    DestLocationNotAllowed,
+    TooMuchProductInCommandError,
+    ProductNotInSource,
+    response_decorator
+)
 
 class ClusterBatchPicking(Component):
     _inherit = "base.shopfloor.process"

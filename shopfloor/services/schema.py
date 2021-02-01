@@ -54,6 +54,15 @@ class BaseShopfloorSchemaResponse(Component):
             },
         }
 
+    def partner(self, with_picking_count=False):
+        schema = {
+            "id": {"required": True, "type": "integer"},
+            "name": {"type": "string", "nullable": False, "required": True},
+        }
+
+        if with_picking_count:
+            schema["picking_count"] = {"required": False, "type": "integer"}
+
     def picking(self, with_move_lines=False, no_packaging=False):
         schema = {
             "id": {"required": True, "type": "integer"},

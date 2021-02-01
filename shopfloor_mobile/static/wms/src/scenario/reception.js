@@ -12,12 +12,12 @@ const Reception = {
     template: `
         <Screen :screen_info="screen_info">
             <choosing-reception-contact
-                v-if="state_is('choosingContact')"
+                v-if="state_is('start')"
                 @select-contact="state.onSelectContact"
                 :stateData="state"
                 />
             <choosing-reception-picking
-                v-if="state_is('choosingPicking')"
+                v-if="state_is('manual_selection')"
                 @select-picking="state.onSelectPicking"
                 :stateData="state"
                 />
@@ -39,23 +39,22 @@ const Reception = {
             </v-dialog>
         </Screen>
     `,
+    mounted() {
+        this.wait_call(
+            this.odoo.call('list_vendor_with_pickings'),
+        );
+    },
     data: function() {
         return {
             usage: "reception",
-            initial_state_key: "choosingContact",
+            initial_state_key: "start",
             scan_destination_qty: 0,
             errorNotFound: undefined,
             states: {
-                choosingContact: {
+                start: {
                     onSelectContact: () => {
                         this.wait_call(
                             this.odoo.call('list_stock_picking'),
-                            (result) => {
-                                result.data.choosingPicking = result.data[result.next_state];
-                                delete result.data[result.next_state];
-                                result.next_state = "choosingPicking"
-                                this.on_call_success(result);
-                            },
                         );
                     },
                     fields: [
@@ -64,20 +63,8 @@ const Reception = {
                             path: "picking_count",
                         },
                     ],
-                    contacts: [
-                        {
-                            name: "Vendeur 1",
-                            picking_count: 2,
-                            id: 7,
-                        },
-                        {
-                            name: "Vendeur 2",
-                            picking_count: 1,
-                            id: 1,
-                        },
-                    ],
                 },
-                choosingPicking: {
+                manual_selection: {
                     onSelectPicking: (picking_id) => {
                         this.wait_call(
                             this.odoo.call('select', {picking_id})
@@ -90,7 +77,7 @@ const Reception = {
                         },
                     ],
                 },
-                select_line: {
+                list_products_scanned: {
                     scanned: [],
                     productQtyFields: [
                         {
