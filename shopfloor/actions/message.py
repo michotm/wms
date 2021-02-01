@@ -523,3 +523,9 @@ class MessageAction(Component):
                 packaging.name, carrier.name
             ),
         }
+
+    def stock_issue_for_line(self, name):
+        return {
+            "message_type": "info",
+            "body": _("Stock issue declared for {}").format(name),
+        }
