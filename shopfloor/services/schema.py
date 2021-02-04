@@ -62,6 +62,7 @@ class BaseShopfloorSchemaResponse(Component):
 
         if with_picking_count:
             schema["picking_count"] = {"type": "integer","required": True, "nullable": False}
+        return schema
 
     def picking(self, with_move_lines=False, no_packaging=False):
         schema = {

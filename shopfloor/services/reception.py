@@ -248,7 +248,7 @@ class ShopfloorReceptionValidatorResponse(Component):
     """Validators for the Checkout endpoints responses"""
 
     _inherit = "base.shopfloor.validator.response"
-    _name = "shopfloor.checkout.validator.response"
+    _name = "shopfloor.reception.validator.response"
     _usage = "reception.validator.response"
 
     _start_state = "start"
