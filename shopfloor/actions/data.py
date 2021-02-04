@@ -66,7 +66,6 @@ class DataAction(Component):
         return [
             "id",
             "name",
-            ("picking_ids:pickings", ["id"])
         ]
 
     @ensure_model("stock.location")

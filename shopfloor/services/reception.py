@@ -1,5 +1,6 @@
 # Copyright 2020 Akretion (https://akretion.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+import pdb
 from odoo import _
 
 from odoo.addons.base_rest.components.service import to_int
@@ -63,6 +64,13 @@ class Reception(Component):
             ("picking_type_id", "in", self.picking_types.ids),
         ]
 
+    def _search_picking_by_partner_id(self, id):
+        return [
+            ("state", "=", "assigned"),
+            ("picking_type_id", "in", self.picking_types.ids),
+            ("partner_id", "=", id),
+        ]
+
     def _lines_checkout_done(self, picking):
         return picking.move_line_ids.filtered(self._filter_lines_checkout_done)
 
@@ -81,7 +89,10 @@ class Reception(Component):
         partners_data = self.data.partners(partners)
 
         for partner in partners_data:
-            partner["picking_count"] = len(partner.picking)
+            pickings = self.env["stock.picking"].search(
+                self._search_picking_by_partner_id(partner["id"]),
+            )
+            partner["picking_count"] = len(pickings)
 
         data = {"partners": partners_data}
 
@@ -267,17 +278,11 @@ class ShopfloorReceptionValidatorResponse(Component):
     @property
     def _schema_partner_list(self):
         return {
-            "partners": {
-                "type": "list",
-                "schema": {"type": "dict", "schema": self.schemas.partner(with_picking_count=True)},
-            }
+            "partners": self.schemas._schema_list_of(self.schemas.partner(with_picking_count=True)),
         }
 
     @property
     def _schema_selection_list(self):
         return {
-            "pickings": {
-                "type": "list",
-                "schema": {"type": "dict", "schema": self.schemas.picking()},
-            }
+            "pickings": self.schemas._schema_list_of(self.schemas.picking()),
         }
