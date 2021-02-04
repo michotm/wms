@@ -5,7 +5,7 @@
  */
 
 Vue.component("choosing-reception-contact", {
-    props: ["stateData"],
+    props: ["partners", "fields"],
     template: `
         <div>
             <searchbar
@@ -13,8 +13,8 @@ Vue.component("choosing-reception-contact", {
             />
             <contact-list
                 v-on="$listeners"
-                :fields="stateData.fields"
-                :contacts="stateData.contacts"
+                :fields="fields"
+                :contacts="partners"
                 />
         </div>
     `,

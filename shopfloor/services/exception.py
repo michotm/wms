@@ -29,6 +29,18 @@ class OperationNotFoundError(MessageNameBasedError):
     def __init__(self, state, data):
         super().__init__(state, data, message_name="operation_not_found")
 
+class StockPickingNotFound(MessageNameBasedError):
+    def __init__(self, state, data):
+        super().__init__(state, data, message_name="stock_picking_not_found")
+
+class CannotMovePickingType(MessageNameBasedError):
+    def __init__(self, state, data):
+        super().__init__(state, data, message_name="cannot_move_something_in_picking_type")
+
+class StockPickingNotAvailable(MessageNameBasedError):
+    def __init__(self, state, data):
+        super().__init__(state, data, message_name="stock_picking_not_available")
+
 class BarcodeNotFoundError(MessageNameBasedError):
     def __init__(self, state, data):
         super().__init__(state, data, message_name="barcode_not_found")

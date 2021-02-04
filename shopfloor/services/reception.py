@@ -9,7 +9,10 @@ from odoo.addons.component.core import Component
 from .service import to_float
 
 from .exception import (
-    response_decorator
+    StockPickingNotFound,
+    CannotMovePickingType,
+    StockPickingNotAvailable,
+    response_decorator,
 )
 
 class Reception(Component):
@@ -39,6 +42,10 @@ class Reception(Component):
     _name = "shopfloor.reception"
     _usage = "reception"
     _description = __doc__
+
+    @staticmethod
+    def _filter_lines_to_receive(move_line):
+        return move_line.product_uom_qty != move_line.qty_done and not move_line.shopfloor_checkout_done
 
     def _data_for_move_lines(self, lines, **kw):
         return self.data.move_lines(lines, **kw)
@@ -99,9 +106,9 @@ class Reception(Component):
         return self._response(next_state="start", data=data, message=message)
 
 
-    def _response_for_manual_selection(self, message=None):
+    def _response_for_manual_selection(self, partner_id, message=None):
         pickings = self.env["stock.picking"].search(
-            self._domain_for_list_stock_picking(),
+            self._search_picking_by_partner_id(partner_id),
             order=self._order_for_list_stock_picking(),
         )
         data = {"pickings": self.data.pickings(pickings)}
@@ -175,12 +182,22 @@ class Reception(Component):
             )
         return self._select_lines_from_package(picking, selection_lines, package)
 
+    def _select_picking(self, picking, state_for_error, data):
+        if not picking:
+            raise StockPickingNotFound(state_for_error, data)
+        if picking.picking_type_id not in self.picking_types:
+            raise CannotMovePickingType(state_for_error, data)
+        if picking.state != "assigned":
+            raise StockPickingNotAvailable(state_for_error, data)
+
+        return self._response_for_select_line(picking)
+
     @response_decorator
     def list_vendor_with_pickings(self):
         return self._response_for_start()
 
     @response_decorator
-    def list_stock_picking(self):
+    def list_stock_picking(self, partner_id):
         """List stock.picking records available
 
         Returns a list of all the available records for the current picking
@@ -189,7 +206,7 @@ class Reception(Component):
         Transitions:
         * manual_selection: to the selection screen
         """
-        return self._response_for_manual_selection()
+        return self._response_for_manual_selection(partner_id)
 
     @response_decorator
     def select_line(self, picking_id, package_id=None, move_line_id=None):
@@ -226,6 +243,36 @@ class Reception(Component):
             move_line = self.env["stock.move.line"].browse(move_line_id).exists()
             return self._select_line_move_line(picking, selection_lines, move_line)
 
+    def select(self, picking_id):
+        """Select a stock picking for the scenario
+
+        Used from the list of stock pickings (manual_selection), from there,
+        the user can click on a stock.picking record which calls this method.
+
+        The ``list_stock_picking`` returns only the valid records (same picking
+        type, fully available, ...), but this method has to check again in case
+        something changed since the list was sent to the client.
+
+        Transitions:
+        * manual_selection: stock.picking could finally not be selected (not
+          available, ...)
+        * summary: goes straight to this state used to set the moves as done when
+          all the move lines with a reserved quantity have a 'quantity done'
+        * select_line: the "normal" case, when the user has to put in pack/move
+          lines
+        """
+        picking = self.env["stock.picking"].browse(picking_id)
+        message = self._check_picking_status(picking)
+
+        pickings = self.env["stock.picking"].search(
+            self._search_picking_by_partner_id(picking.partner_id.id),
+            order=self._order_for_list_stock_picking(),
+        )
+        data = {"pickings": self.data.pickings(pickings)}
+
+        if message:
+            return self._response_for_manual_selection(picking.partner_id.id, message=message)
+        return self._select_picking(picking, "manual_selection", data)
 
 class ShopfloorReceptionValidator(Component):
     """Validators for the Checkout endpoints"""
@@ -262,6 +309,8 @@ class ShopfloorReceptionValidatorResponse(Component):
         return {
             "manual_selection": self._schema_selection_list,
             "start": self._schema_partner_list,
+            "summary": self._schema_summary,
+            "select_line": self._schema_stock_picking_details,
         }
 
     def list_vendor_with_pickings(self):
@@ -273,6 +322,28 @@ class ShopfloorReceptionValidatorResponse(Component):
     def select(self):
         return self._response_schema(
             next_states={"manual_selection", "summary", "select_line"}
+        )
+
+    def _schema_stock_picking(self, lines_with_packaging=False):
+        schema = self.schemas.picking()
+        schema.update(
+            {
+                "move_lines": self.schemas._schema_list_of(
+                    self.schemas.move_line(with_packaging=lines_with_packaging)
+                )
+            }
+        )
+        return {"picking": self.schemas._schema_dict_of(schema, required=True)}
+
+    @property
+    def _schema_stock_picking_details(self):
+        return self._schema_stock_picking()
+
+    @property
+    def _schema_summary(self):
+        return dict(
+            self._schema_stock_picking(lines_with_packaging=True),
+            all_processed={"type": "boolean"},
         )
 
     @property

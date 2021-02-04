@@ -14,7 +14,8 @@ const Reception = {
             <choosing-reception-contact
                 v-if="state_is('start')"
                 @select-contact="state.onSelectContact"
-                :stateData="state"
+                :partners="state.data.partners"
+                :fields="state.fields"
                 />
             <choosing-reception-picking
                 v-if="state_is('manual_selection')"
@@ -52,9 +53,9 @@ const Reception = {
             errorNotFound: undefined,
             states: {
                 start: {
-                    onSelectContact: () => {
+                    onSelectContact: (partner_id) => {
                         this.wait_call(
-                            this.odoo.call('list_stock_picking'),
+                            this.odoo.call('list_stock_picking', {partner_id}),
                         );
                     },
                     fields: [
