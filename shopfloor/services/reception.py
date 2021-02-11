@@ -47,6 +47,29 @@ class Reception(Component):
     def _filter_lines_to_receive(move_line):
         return move_line.product_uom_qty != move_line.qty_done and not move_line.shopfloor_checkout_done
 
+    def _create_data_for_scan_products(partner_id, move_line_id, move_lines_picked_ids):
+        pickings = self.env["stock.picking"].search(
+            self._search_picking_by_partner_id(partner_id),
+            order=self._order_for_list_stock_picking(),
+        )
+        move_lines = pickings.mapped('move_line_ids')
+        move_lines_picked = self.env["stock.move.line"].search(
+            [("id", "in", move_lines_picked_ids)],
+            order=self._order_for_list_stock_picking(),
+        )
+        move_line_picking = self.env["stock.move.line"].search(
+            [("id", "=", move_line_id)],
+            order=self._order_for_list_stock_picking(),
+        )
+        move_lines_data = {
+            "move_lines": self.data.move_lines(move_lines),
+            "id": partner_id,
+            "move_lines_picked": self.data.move_lines(move_lines_picked),
+            "move_line_picking": self.data.move_line(move_line_picking),
+        }
+
+        return move_lines_data,
+
     def _data_for_move_lines(self, lines, **kw):
         return self.data.move_lines(lines, **kw)
 
@@ -78,6 +101,15 @@ class Reception(Component):
             ("partner_id", "=", id),
         ]
 
+    def _search_move_line_by_product(self, id, barcode):
+        return [
+            ("picking_id.state", "=", "assigned"),
+            ("picking_id.picking_type_id", "in", self.picking_types.ids),
+            ("picking_id.partner_id", "=", id),
+            ("product_id.barcode", "=", barcode),
+            ("state", "not in", ("cancel", "done")),
+        ]
+
     def _lines_checkout_done(self, picking):
         return picking.move_line_ids.filtered(self._filter_lines_checkout_done)
 
@@ -86,6 +118,28 @@ class Reception(Component):
 
     def _order_for_list_stock_picking(self):
         return "scheduled_date asc, id asc"
+
+    def _order_for_move_line(self):
+        return "date asc, id asc"
+
+    def _response_for_scan_products(self, partner_id, message=None):
+        pickings = self.env["stock.picking"].search(
+            self._search_picking_by_partner_id(partner_id),
+            order=self._order_for_list_stock_picking(),
+        )
+        move_lines = pickings.mapped('move_line_ids')
+        move_lines_data = {
+            "move_lines": self.data.move_lines(move_lines),
+            "id": partner_id,
+            "move_lines_picked": None,
+            "move_line_picking": None,
+        }
+
+        return self._response(
+            next_state="scan_products",
+            data=move_lines_data,
+            message=message,
+        )
 
     def _response_for_start(self, message=None):
         pickings = self.env["stock.picking"].search(
@@ -104,15 +158,6 @@ class Reception(Component):
         data = {"partners": partners_data}
 
         return self._response(next_state="start", data=data, message=message)
-
-
-    def _response_for_manual_selection(self, partner_id, message=None):
-        pickings = self.env["stock.picking"].search(
-            self._search_picking_by_partner_id(partner_id),
-            order=self._order_for_list_stock_picking(),
-        )
-        data = {"pickings": self.data.pickings(pickings)}
-        return self._response(next_state="manual_selection", data=data, message=message)
 
     def _response_for_select_document(self, message=None):
         return self._response(next_state="select_document", message=message)
@@ -197,7 +242,7 @@ class Reception(Component):
         return self._response_for_start()
 
     @response_decorator
-    def list_stock_picking(self, partner_id):
+    def list_move_lines(self, partner_id):
         """List stock.picking records available
 
         Returns a list of all the available records for the current picking
@@ -206,73 +251,24 @@ class Reception(Component):
         Transitions:
         * manual_selection: to the selection screen
         """
-        return self._response_for_manual_selection(partner_id)
+        return self._response_for_scan_products(partner_id)
 
     @response_decorator
-    def select_line(self, picking_id, package_id=None, move_line_id=None):
-        """Select move lines of the stock picking
-
-        This is the same as ``scan_line``, except that a package id or a
-        move_line_id is given by the client (user clicked on a list).
-
-        It returns a list of move line ids that will be displayed by the
-        screen ``select_package``. This screen will have to send this list to
-        the endpoints it calls, so we can select/deselect lines but still
-        show them in the list of the client application.
-
-        Transitions:
-        * select_line: nothing could be found for the barcode
-        * select_package: lines are selected, user is redirected to this
-        screen to change the qty done and destination package if needed
-        """
-        assert package_id or move_line_id
-
-        picking = self.env["stock.picking"].browse(picking_id)
-        message = self._check_picking_status(picking)
-        if message:
-            return self._response_for_select_document(message=message)
-
-        selection_lines = self._lines_to_receive(picking)
-        if not selection_lines:
-            return self._response_for_summary(picking)
-
-        if package_id:
-            package = self.env["stock.quant.package"].browse(package_id).exists()
-            return self._select_line_package(picking, selection_lines, package)
-        if move_line_id:
-            move_line = self.env["stock.move.line"].browse(move_line_id).exists()
-            return self._select_line_move_line(picking, selection_lines, move_line)
-
-    def select(self, picking_id):
-        """Select a stock picking for the scenario
-
-        Used from the list of stock pickings (manual_selection), from there,
-        the user can click on a stock.picking record which calls this method.
-
-        The ``list_stock_picking`` returns only the valid records (same picking
-        type, fully available, ...), but this method has to check again in case
-        something changed since the list was sent to the client.
-
-        Transitions:
-        * manual_selection: stock.picking could finally not be selected (not
-          available, ...)
-        * summary: goes straight to this state used to set the moves as done when
-          all the move lines with a reserved quantity have a 'quantity done'
-        * select_line: the "normal" case, when the user has to put in pack/move
-          lines
-        """
-        picking = self.env["stock.picking"].browse(picking_id)
-        message = self._check_picking_status(picking)
-
-        pickings = self.env["stock.picking"].search(
-            self._search_picking_by_partner_id(picking.partner_id.id),
-            order=self._order_for_list_stock_picking(),
+    def scan_product(self, partner_id, barcode):
+        product_move_lines = self.env["stock.move.line"].search(
+            self._search_move_line_by_product(partner_id, barcode),
+            order=self._order_for_move_line(),
         )
-        data = {"pickings": self.data.pickings(pickings)}
 
-        if message:
-            return self._response_for_manual_selection(picking.partner_id.id, message=message)
-        return self._select_picking(picking, "manual_selection", data)
+        print(product_move_lines)
+
+        return self._response_for_scan_products(partner_id)
+
+    def set_quantity(self, partner_id, barcode, qty):
+        product_move_lines = self.env["stock.move_line"].search(
+            self._search_move_line_by_product(partner_id, barcode),
+            order=self._order_for_move_line(),
+        )
 
 class ShopfloorReceptionValidator(Component):
     """Validators for the Checkout endpoints"""
@@ -284,12 +280,14 @@ class ShopfloorReceptionValidator(Component):
     def list_vendor_with_pickings(self):
         return {}
 
-    def list_stock_picking(self):
+    def list_move_lines(self):
         return {"partner_id": {"coerce": to_int, "required": True, "type": "integer"}}
 
-    def select(self):
-        return {"picking_id": {"coerce": to_int, "required": True, "type": "integer"}}
-
+    def scan_product(self):
+        return {
+            "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "barcode": {"required": True, "type": "string"},
+        }
 
 class ShopfloorReceptionValidatorResponse(Component):
     """Validators for the Checkout endpoints responses"""
@@ -310,19 +308,17 @@ class ShopfloorReceptionValidatorResponse(Component):
             "manual_selection": self._schema_selection_list,
             "start": self._schema_partner_list,
             "summary": self._schema_summary,
-            "select_line": self._schema_stock_picking_details,
+            "scan_products": self._schema_for_move_lines_details,
         }
 
     def list_vendor_with_pickings(self):
         return self._response_schema(next_states={"start"})
 
-    def list_stock_picking(self):
-        return self._response_schema(next_states={"manual_selection"})
+    def list_move_lines(self):
+        return self._response_schema(next_states={"scan_products"})
 
-    def select(self):
-        return self._response_schema(
-            next_states={"manual_selection", "summary", "select_line"}
-        )
+    def scan_product(self):
+        return self._response_schema(next_states={"scan_products", "summary"})
 
     def _schema_stock_picking(self, lines_with_packaging=False):
         schema = self.schemas.picking()
@@ -356,4 +352,13 @@ class ShopfloorReceptionValidatorResponse(Component):
     def _schema_selection_list(self):
         return {
             "pickings": self.schemas._schema_list_of(self.schemas.picking()),
+        }
+
+    @property
+    def _schema_for_move_lines_details(self):
+        return {
+            "move_lines": self.schemas._schema_list_of(self.schemas.move_line()),
+            "id": {"required": True, "type": "integer"},
+            "move_lines_picked": self.schemas._schema_list_of(self.schemas.move_line()),
+            "move_line_picking": {"type": "dict", "nullable": True, "schema": self.schemas.move_line()},
         }

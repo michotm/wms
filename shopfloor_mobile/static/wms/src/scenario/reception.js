@@ -23,7 +23,7 @@ const Reception = {
                 :stateData="state"
                 />
             <reception-scanning-product
-                v-if="state_is('select_line')"
+                v-if="state_is('scan_products')"
                 :stateData="state"
                 @found="state.onScanProduct"
                 />
@@ -41,12 +41,16 @@ const Reception = {
         </Screen>
     `,
     mounted() {
-        this.wait_call(
-            this.odoo.call('list_vendor_with_pickings'),
-        );
+        if (!this.state_get_data('start').partners) {
+            this.partnerId = null,
+            this.wait_call(
+                this.odoo.call('list_vendor_with_pickings'),
+            );
+        }
     },
     data: function() {
         return {
+            partnerId: null,
             usage: "reception",
             initial_state_key: "start",
             scan_destination_qty: 0,
@@ -55,7 +59,8 @@ const Reception = {
                 start: {
                     onSelectContact: (partner_id) => {
                         this.wait_call(
-                            this.odoo.call('list_stock_picking', {partner_id}),
+                            this.odoo.call('list_move_lines', {partner_id}),
+                            () => this.partnerId = partner_id,
                         );
                     },
                     fields: [
@@ -65,20 +70,7 @@ const Reception = {
                         },
                     ],
                 },
-                manual_selection: {
-                    onSelectPicking: (picking_id) => {
-                        this.wait_call(
-                            this.odoo.call('select', {picking_id})
-                        );
-                    },
-                    fields: [
-                        {
-                            label: "Partner",
-                            path: "partner.name",
-                        },
-                    ],
-                },
-                list_products_scanned: {
+                scan_products: {
                     scanned: [],
                     productQtyFields: [
                         {
@@ -98,23 +90,10 @@ const Reception = {
                             path: "partner.name",
                         },
                     ],
-                    onScanProduct: ({text: scanData}) => {
-                        // We check if the product is in the receipt
-                        let product = this.state.data.picking.move_lines.find(line => {
-                            return line.product.barcode === scanData;
-                        });
-
-                        if (!product) {
-                            this.errorNotFound = scanData;
-                            return;
-                        }
-
-                        let productModel = {
-                            name: product.product.name,
-                            qty: 1,
-                        };
-
-                        this.state_set_data({...this.state.data, productChooseQuantity: productModel});
+                    onScanProduct: ({text: barcode}) => {
+                        this.wait_call(
+                            this.odoo.call('scan_product', {partner_id: this.partnerId, barcode})
+                        );
                     },
                 }
             },
