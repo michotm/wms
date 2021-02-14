@@ -47,19 +47,19 @@ class Reception(Component):
     def _filter_lines_to_receive(move_line):
         return move_line.product_uom_qty != move_line.qty_done and not move_line.shopfloor_checkout_done
 
-    def _create_data_for_scan_products(partner_id, move_line_id, move_lines_picked_ids):
+    def _create_data_for_scan_products(self, partner_id, move_line_id):
         pickings = self.env["stock.picking"].search(
             self._search_picking_by_partner_id(partner_id),
             order=self._order_for_list_stock_picking(),
         )
         move_lines = pickings.mapped('move_line_ids')
         move_lines_picked = self.env["stock.move.line"].search(
-            [("id", "in", move_lines_picked_ids)],
-            order=self._order_for_list_stock_picking(),
+            self._search_move_line_picked(partner_id),
+            order=self._order_for_move_line(),
         )
         move_line_picking = self.env["stock.move.line"].search(
             [("id", "=", move_line_id)],
-            order=self._order_for_list_stock_picking(),
+            order=self._order_for_move_line(),
         )
         move_lines_data = {
             "move_lines": self.data.move_lines(move_lines),
@@ -68,7 +68,7 @@ class Reception(Component):
             "move_line_picking": self.data.move_line(move_line_picking),
         }
 
-        return move_lines_data,
+        return move_lines_data
 
     def _data_for_move_lines(self, lines, **kw):
         return self.data.move_lines(lines, **kw)
@@ -94,11 +94,19 @@ class Reception(Component):
             ("picking_type_id", "in", self.picking_types.ids),
         ]
 
-    def _search_picking_by_partner_id(self, id):
+    def _search_picking_by_partner_id(self, id, state="assigned"):
         return [
-            ("state", "=", "assigned"),
+            ("state", "=", state),
             ("picking_type_id", "in", self.picking_types.ids),
             ("partner_id", "=", id),
+        ]
+
+    def _search_move_line_picked(self, id):
+        return [
+            ("picking_id.state", "=", "assigned"),
+            ("picking_id.picking_type_id", "in", self.picking_types.ids),
+            ("picking_id.partner_id", "=", id),
+            ("state", "=", "done"),
         ]
 
     def _search_move_line_by_product(self, id, barcode):
@@ -122,18 +130,11 @@ class Reception(Component):
     def _order_for_move_line(self):
         return "date asc, id asc"
 
-    def _response_for_scan_products(self, partner_id, message=None):
-        pickings = self.env["stock.picking"].search(
-            self._search_picking_by_partner_id(partner_id),
-            order=self._order_for_list_stock_picking(),
+    def _response_for_scan_products(self, partner_id, move_line_id=None, message=None):
+        move_lines_data = self._create_data_for_scan_products(
+            partner_id,
+            move_line_id,
         )
-        move_lines = pickings.mapped('move_line_ids')
-        move_lines_data = {
-            "move_lines": self.data.move_lines(move_lines),
-            "id": partner_id,
-            "move_lines_picked": None,
-            "move_line_picking": None,
-        }
 
         return self._response(
             next_state="scan_products",
@@ -260,9 +261,9 @@ class Reception(Component):
             order=self._order_for_move_line(),
         )
 
-        print(product_move_lines)
+        product_move_lines[0].qty_done += 1
 
-        return self._response_for_scan_products(partner_id)
+        return self._response_for_scan_products(partner_id, product_move_lines[0].id)
 
     def set_quantity(self, partner_id, barcode, qty):
         product_move_lines = self.env["stock.move_line"].search(

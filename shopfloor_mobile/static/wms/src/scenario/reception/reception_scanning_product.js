@@ -6,6 +6,16 @@
 
 Vue.component("reception-scanning-product", {
     props: ["stateData"],
+    computed: {
+        moveLines: function() {
+            return ([this.stateData.data.move_line_picking])
+                .concat(this.stateData.data.move_lines_picked || [])
+                .map(move_line => ({
+                    qtyDone: move_line.qty_done,
+                    name: move_line.product.display_name,
+                }));
+        },
+    },
     template: `
         <div>
             <reception-info-bar
@@ -25,7 +35,7 @@ Vue.component("reception-scanning-product", {
             <reception-product-list
                 v-on="$listeners"
                 :fields="stateData.productFields"
-                :products="stateData.scanned"
+                :products="moveLines"
                 />
             <div
                 v-if="stateData.scanned.length == 0 && !stateData.data.productChooseQuantity"
