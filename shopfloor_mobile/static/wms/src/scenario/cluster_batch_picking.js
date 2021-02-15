@@ -223,18 +223,18 @@ const ClusterBatchPicking = {
                     },
                 },
                 scan_products: {
-                    cancelLine: (move_line_id) => {
-                        this.wait_call(
-                            this.odoo.call("cancel_line", {
-                                move_line_id,
-                                picking_batch_id: this.state.data.id,
-                            })
-                        );
-                    },
                     actionStockOut: ({move_line_id, event_name}) => {
                         if (event_name === 'actionStockOut') {
                             this.wait_call(
                                 this.odoo.call('stock_issue', {
+                                    move_line_id,
+                                    picking_batch_id: this.state.data.id,
+                                })
+                            );
+                        }
+                        else if (event_name ==='cancelLine') {
+                            this.wait_call(
+                                this.odoo.call("cancel_line", {
                                     move_line_id,
                                     picking_batch_id: this.state.data.id,
                                 })

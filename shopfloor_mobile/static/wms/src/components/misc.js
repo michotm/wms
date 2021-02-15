@@ -330,6 +330,13 @@ Vue.component("line-actions-popup", {
             this.$emit("action", action);
         },
     },
+    computed: {
+        actionsWithCondition: function() {
+            return this.actions.filter(
+                action => action.condition === undefined || action.condition,
+            );
+        }
+    },
     template: `
   <div :class="$options._componentTag">
     <v-dialog v-model="dialog" fullscreen tile class="actions fullscreen text-center">
@@ -344,7 +351,7 @@ Vue.component("line-actions-popup", {
       </template>
       <v-card>
         <div class="button-list button-vertical-list full">
-          <v-row align="center" v-for="action in actions">
+          <v-row align="center" v-for="action in actionsWithCondition">
             <v-col class="text-center" cols="12">
               <btn-action @click="handle_action(action)">{{ action.name }}</btn-action>
             </v-col>
