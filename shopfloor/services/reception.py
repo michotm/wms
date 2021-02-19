@@ -47,7 +47,7 @@ class Reception(Component):
     def _filter_lines_to_receive(move_line):
         return move_line.product_uom_qty != move_line.qty_done and not move_line.shopfloor_checkout_done
 
-    def _create_data_for_scan_products(self, partner_id, move_line_id):
+    def _create_data_for_scan_products(self, partner_id, move_line_ids):
         pickings = self.env["stock.picking"].search(
             self._search_picking_by_partner_id(partner_id),
             order=self._order_for_list_stock_picking(),
@@ -57,15 +57,15 @@ class Reception(Component):
             self._search_move_line_picked(partner_id),
             order=self._order_for_move_line(),
         )
-        move_line_picking = self.env["stock.move.line"].search(
-            [("id", "=", move_line_id)],
+        move_lines_picking = self.env["stock.move.line"].search(
+            [("id", "in", move_line_ids)],
             order=self._order_for_move_line(),
         )
         move_lines_data = {
             "move_lines": self.data.move_lines(move_lines),
             "id": partner_id,
             "move_lines_picked": self.data.move_lines(move_lines_picked),
-            "move_line_picking": self.data.move_line(move_line_picking),
+            "move_lines_picking": self.data.move_lines(move_lines_picking),
         }
 
         return move_lines_data
@@ -130,10 +130,10 @@ class Reception(Component):
     def _order_for_move_line(self):
         return "date asc, id asc"
 
-    def _response_for_scan_products(self, partner_id, move_line_id=None, message=None):
+    def _response_for_scan_products(self, partner_id, move_line_ids=None, message=None):
         move_lines_data = self._create_data_for_scan_products(
             partner_id,
-            move_line_id,
+            move_line_ids,
         )
 
         return self._response(
@@ -263,7 +263,14 @@ class Reception(Component):
 
         product_move_lines[0].qty_done += 1
 
-        return self._response_for_scan_products(partner_id, product_move_lines[0].id)
+        return self._response_for_scan_products(partner_id, product_move_lines.ids)
+
+    def increase_quantity(self, partner_id, barcode, move_lines_picking):
+        print(move_lines_picking)
+        return self._response_for_scan_products(partner_id, move_lines_picking)
+
+    def set_quantity(self, partner_id, barcode, move_lines_picking, qty):
+        print(move_lines_picking)
 
     def set_quantity(self, partner_id, barcode, qty):
         product_move_lines = self.env["stock.move_line"].search(
@@ -288,6 +295,20 @@ class ShopfloorReceptionValidator(Component):
         return {
             "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
             "barcode": {"required": True, "type": "string"},
+        }
+
+    def increase_quantity(self):
+        return {
+            "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "barcode": {"required": True, "type": "string"},
+            "move_lines_picking": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
+        }
+
+    def set_quantity(self):
+        return {
+            "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "barcode": {"required": True, "type": "string"},
+            "move_lines_picking": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
         }
 
 class ShopfloorReceptionValidatorResponse(Component):
@@ -319,6 +340,12 @@ class ShopfloorReceptionValidatorResponse(Component):
         return self._response_schema(next_states={"scan_products"})
 
     def scan_product(self):
+        return self._response_schema(next_states={"scan_products", "summary"})
+
+    def increase_quantity(self):
+        return self._response_schema(next_states={"scan_products", "summary"})
+
+    def set_quantity(self):
         return self._response_schema(next_states={"scan_products", "summary"})
 
     def _schema_stock_picking(self, lines_with_packaging=False):
@@ -361,5 +388,5 @@ class ShopfloorReceptionValidatorResponse(Component):
             "move_lines": self.schemas._schema_list_of(self.schemas.move_line()),
             "id": {"required": True, "type": "integer"},
             "move_lines_picked": self.schemas._schema_list_of(self.schemas.move_line()),
-            "move_line_picking": {"type": "dict", "nullable": True, "schema": self.schemas.move_line()},
+            "move_lines_picking": self.schemas._schema_list_of(self.schemas.move_line()),
         }

@@ -42,11 +42,15 @@ const Reception = {
     `,
     mounted() {
         if (!this.state_get_data('start').partners) {
-            this.partnerId = null,
             this.wait_call(
                 this.odoo.call('list_vendor_with_pickings'),
             );
         }
+    },
+    computed() {
+        partnerId: function() {
+            return this.state.data.id;
+        },
     },
     data: function() {
         return {
@@ -60,7 +64,6 @@ const Reception = {
                     onSelectContact: (partner_id) => {
                         this.wait_call(
                             this.odoo.call('list_move_lines', {partner_id}),
-                            () => this.partnerId = partner_id,
                         );
                     },
                     fields: [
@@ -91,9 +94,22 @@ const Reception = {
                         },
                     ],
                     onScanProduct: ({text: barcode}) => {
-                        this.wait_call(
-                            this.odoo.call('scan_product', {partner_id: this.partnerId, barcode})
-                        );
+                        if (this.state.data.move_lines_picking.length <= 0) {
+                            this.wait_call(
+                                this.odoo.call('scan_product', {partner_id: this.partnerId, barcode})
+                            );
+                        }
+                        else {
+                            this.wait_call(
+                                this.odoo.call('increase_quantity', {
+                                    partner_id: this.partnerId,
+                                    barcode,
+                                    move_lines_picking: this.state.data.move_lines_picking.map(
+                                        line => line.id,
+                                    ),
+                                })
+                            );
+                        }
                     },
                 }
             },

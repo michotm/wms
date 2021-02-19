@@ -8,8 +8,10 @@ Vue.component("reception-scanning-product", {
     props: ["stateData"],
     computed: {
         moveLines: function() {
-            return ([this.stateData.data.move_line_picking])
-                .concat(this.stateData.data.move_lines_picked || [])
+            const moveLines = this.stateData.data.move_lines_picked
+            moveLines.unshift(...this.stateData.data.move_lines_picking);
+
+            return moveLines
                 .map(move_line => ({
                     qtyDone: move_line.qty_done,
                     name: move_line.product.display_name,
@@ -38,7 +40,7 @@ Vue.component("reception-scanning-product", {
                 :products="moveLines"
                 />
             <div
-                v-if="stateData.scanned.length == 0 && !stateData.data.productChooseQuantity"
+                v-if="moveLines.length == 0"
                 >
                 Start scanning product to start receiving
             </div>
