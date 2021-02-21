@@ -73,6 +73,14 @@ class ProductNotInSource(MessageBasedError):
         }
         super().__init__(state, data, message)
 
+class ProductNotInOrder(MessageBasedError):
+    def __init__(self, state, data):
+        message = {
+            "message_type": "error",
+            "body": "Product is not present in the receipt",
+        }
+        super().__init__(state, data, message)
+
 
 def response_decorator(called_func):
 

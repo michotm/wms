@@ -6,44 +6,63 @@
 
 Vue.component("reception-scanning-product", {
     props: ["stateData"],
-    computed: {
-        moveLines: function() {
-            const moveLines = this.stateData.data.move_lines_picked
-            moveLines.unshift(...this.stateData.data.move_lines_picking);
+    methods: {
+        constructDataFromLines: function(moveLines, done) {
+            const products = moveLines.reduce((acc, line) => {
+                acc[line.product.id] = acc[line.product.id] || {
+                    name: line.product.display_name,
+                    dest: line.location_dest.name,
+                    qtyDone: 0,
+                    done,
+                };
 
-            return moveLines
-                .map(move_line => ({
-                    qtyDone: move_line.qty_done,
-                    name: move_line.product.display_name,
-                }));
+                acc[line.product.id].qtyDone += line.qty_done;
+
+                return acc;
+            }, {});
+
+            return Object.values(products);
+        }
+    },
+    computed: {
+        moveLinesPicked: function() {
+            const moveLines = this.stateData.data.move_lines_picked
+
+            return this.constructDataFromLines(moveLines, true);
         },
+        moveLinesPicking: function() {
+            const moveLines = this.stateData.data.move_lines_picking
+
+            return this.constructDataFromLines(moveLines);
+        },
+        moveLinesPickingDest: function() {
+            return this.stateData.data.move_lines_picking[0].location_dest;
+        }
     },
     template: `
         <div>
-            <reception-info-bar
-                :reception="stateData.data.picking"
-                :fields="stateData.receptionFields"
-                />
             <searchbar
                 :input_placeholder="scan_placeholder"
                 v-on="$listeners"
                 />
-            <reception-fill-quantity
-                :fields="stateData.productFields"
-                :product="stateData.data.productChooseQuantity"
-                v-if="stateData.data.productChooseQuantity"
-                >
-            </reception-fill-quantity>
+            <v-row>
+                <v-col v-if="moveLinesPicking.length == 0">
+                    Start scanning product to start receiving
+                </v-col>
+            </v-row>
             <reception-product-list
-                v-on="$listeners"
-                :fields="stateData.productFields"
-                :products="moveLines"
+                :fields="stateData.pickingFields"
+                :products="moveLinesPicking"
                 />
-            <div
-                v-if="moveLines.length == 0"
-                >
-                Start scanning product to start receiving
-            </div>
+            <v-row>
+                <v-col v-if="moveLinesPicking.length > 0">
+                    This product should be put in {{moveLinesPickingDest.name}} ({{moveLinesPickingDest.barcode}})
+                </v-col>
+            </v-row>
+            <reception-product-list
+                :fields="stateData.pickedFields"
+                :products="moveLinesPicked"
+                />
         </div>
     `,
     data: () => ({
