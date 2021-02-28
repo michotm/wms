@@ -16,7 +16,7 @@ Vue.component("item-detail-card", {
             tile
             :class="{'main': opts.main, 'no-outline': opts.no_outline}"
             v-if="!_.isEmpty(record)"
-            @click="opts.on_click_action ? opts.on_click_action : false"
+            v-on="opts.on_click_action ? {click: opts.on_click_action} : {}"
             :outlined="outlined"
             >
             <v-card-title v-if="!opts.no_title">
@@ -25,7 +25,7 @@ Vue.component("item-detail-card", {
                     <span v-text="_.result(record, opts.key_title)" />
                     <v-btn icon class="detail-action" link
                             v-if="opts.on_title_action || opts.title_action_field"
-                            @click="opts.on_title_action ? opts.on_title_action(): on_detail_action(record, opts.title_action_field)">
+                            v-on="opts.on_title_action ? {click: opts.on_title_action} : {}">
                         <btn-info-icon />
                     </v-btn>
                 </slot>
@@ -65,4 +65,7 @@ Vue.component("item-detail-card", {
         </p>
     </div>
   `,
+    renderTriggered() {
+        console.log(this.opts.on_click_action);
+    },
 });

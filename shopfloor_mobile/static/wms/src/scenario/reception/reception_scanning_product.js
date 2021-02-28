@@ -68,7 +68,4 @@ Vue.component("reception-scanning-product", {
     data: () => ({
         scan_placeholder: "Scan product",
     }),
-    updated: () => {
-        console.log("updated");
-    }
 });
