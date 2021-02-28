@@ -39,7 +39,6 @@ const ClusterBatchPicking = {
                 :selectedLocation="selectedLocation"
                 :currentLocation="currentLocation"
                 :lastPickedLine="lastPickedLine"
-                @cancelLine="state.cancelLine"
                 @action="state.actionStockOut"
                 />
             <batch-picking-line-actions

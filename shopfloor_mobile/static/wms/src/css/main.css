@@ -1,7 +1,7 @@
 div.v-application--wrap > .container {
     padding: 0;
 }
-main.v-content > .v-content__wrap > .header .container {
+main.v-main > .v-main > .header .container {
     padding-bottom: 0;
 }
 

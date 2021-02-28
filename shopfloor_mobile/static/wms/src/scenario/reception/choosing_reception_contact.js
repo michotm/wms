@@ -12,10 +12,16 @@ Vue.component("choosing-reception-contact", {
                 :input_placeholder="scan_placeholder"
             />
             <contact-list
+                v-if="partners && partners.length > 0"
                 v-on="$listeners"
                 :fields="fields"
                 :contacts="partners"
                 />
+            <div
+                v-if="!partners || partners.length === 0"
+                >
+                There is no reception to process
+            </div>
         </div>
     `,
     data: () => ({

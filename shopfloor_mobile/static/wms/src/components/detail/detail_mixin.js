@@ -92,7 +92,6 @@ export var ItemDetailMixin = {
                 full_detail: false,
                 // customize action per all detail fields
                 detail_action: null,
-                on_click_action: null,
             });
             return opts;
         },

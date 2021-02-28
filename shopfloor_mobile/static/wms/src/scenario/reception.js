@@ -49,11 +49,6 @@ const Reception = {
         </Screen>
     `,
     mounted() {
-        if (!this.state_get_data('start').partners) {
-            this.wait_call(
-                this.odoo.call('list_vendor_with_pickings'),
-            );
-        }
     },
     computed: {
         partnerId: function() {
@@ -79,6 +74,13 @@ const Reception = {
                             path: "picking_count",
                         },
                     ],
+                    enter: () => {
+                        if (!this.state_get_data('start').partners) {
+                            this.wait_call(
+                                this.odoo.call('list_vendor_with_pickings'),
+                            );
+                        }
+                    },
                 },
                 scan_products: {
                     scanned: [],

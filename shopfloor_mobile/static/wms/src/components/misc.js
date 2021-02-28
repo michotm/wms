@@ -351,7 +351,7 @@ Vue.component("line-actions-popup", {
       </template>
       <v-card>
         <div class="button-list button-vertical-list full">
-          <v-row align="center" v-for="action in actionsWithCondition">
+          <v-row align="center" v-for="action in actionsWithCondition" :key="action.event_name">
             <v-col class="text-center" cols="12">
               <btn-action @click="handle_action(action)">{{ action.name }}</btn-action>
             </v-col>
