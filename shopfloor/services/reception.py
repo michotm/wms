@@ -389,7 +389,10 @@ class Reception(Component):
                 ),
             )
 
+        quantity_stored = 0;
+
         for line in product_move_lines:
+            quantity_stored += line.qty_done
             if line.qty_done == line.product_uom_qty:
                 line.write({"location_dest_id": location_dest.id})
                 line.shopfloor_checkout_done = True
@@ -399,7 +402,14 @@ class Reception(Component):
                 line.write({"location_dest_id": location_dest.id})
                 line.shopfloor_checkout_done = True
 
-        return self._response_for_scan_products(partner_id, [])
+        return self._response_for_scan_products(partner_id, [], {
+            "message_type": "success",
+            "body": _("{} {} put in {}").format(
+                quantity_stored,
+                product_move_lines[0].product_id.name,
+                location_dest.name,
+            )
+        })
 
     @response_decorator
     def finish_receipt(self, partner_id, move_lines_picked):
