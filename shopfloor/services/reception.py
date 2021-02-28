@@ -412,6 +412,27 @@ class Reception(Component):
         })
 
     @response_decorator
+    def reset_product(self, partner_id, move_lines_picking):
+        product_move_lines = self._get_move_line(
+            [("id", "in", move_lines_picking)],
+            partner_id,
+            [],
+        )
+
+        for line in product_move_lines:
+            line.qty_done = 0
+
+        return self._response_for_scan_products(
+            partner_id,
+            [],
+            {
+                "message_type": "success",
+                "body": "Products put back in place",
+            }
+        )
+
+
+    @response_decorator
     def finish_receipt(self, partner_id, move_lines_picked):
         # get move_lines
         # for all move_lines mark picking as done
@@ -478,6 +499,12 @@ class ShopfloorReceptionValidator(Component):
             "move_lines_picked": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
         }
 
+    def reset_product(self):
+        return {
+            "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "move_lines_picking": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
+        }
+
 class ShopfloorReceptionValidatorResponse(Component):
     """Validators for the Checkout endpoints responses"""
 
@@ -517,6 +544,10 @@ class ShopfloorReceptionValidatorResponse(Component):
 
     def finish_receipt(self):
         return self._response_schema(next_states={"start"})
+
+    def reset_product(self):
+        return self._response_schema(next_states={"scan_products"})
+
 
     def _schema_stock_picking(self, lines_with_packaging=False):
         schema = self.schemas.picking()
