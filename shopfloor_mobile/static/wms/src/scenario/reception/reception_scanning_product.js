@@ -22,13 +22,30 @@ Vue.component("reception-scanning-product", {
             }, {});
 
             return Object.values(products);
+        },
+        splitMoveLinesByDest: function(moveLines, done) {
+            const products = moveLines.reduce((acc, line) => {
+                acc[line.product.id + ',' + line.location_dest.id] = acc[line.product.id + ',' + line.location_dest.id] || {
+                    name: line.product.display_name,
+                    dest: line.location_dest.name,
+                    qtyDone: 0,
+                    done,
+                };
+
+                acc[line.product.id + ',' + line.location_dest.id].qtyDone += line.qty_done;
+
+                return acc;
+            }, {});
+
+            return Object.values(products);
         }
     },
     computed: {
         moveLinesPicked: function() {
-            const moveLines = this.stateData.data.move_lines_picked
+            const moveLines = this.stateData.data.move_lines_picked;
+            const moveLineByDest = this.splitMoveLinesByDest(moveLines, true);
 
-            return this.constructDataFromLines(moveLines, true);
+            return moveLineByDest;
         },
         moveLinesPicking: function() {
             const moveLines = this.stateData.data.move_lines_picking

@@ -16,6 +16,7 @@ from .exception import (
     OperationNotFoundError,
     TooMuchProductInCommandError,
     ProductNotInOrder,
+    DestLocationNotAllowed,
     response_decorator,
 )
 
@@ -376,14 +377,26 @@ class Reception(Component):
                 ),
             )
 
+        #Here we assume that all move_line have the same destination
+        if not location_dest.is_sublocation_of(
+            product_move_lines[0].picking_id.location_dest_id
+        ):
+            raise DestLocationNotAllowed(
+                state="scan_products",
+                data=self._create_data_for_scan_products(
+                    partner_id,
+                    product_move_lines.ids,
+                ),
+            )
+
         for line in product_move_lines:
             if line.qty_done == line.product_uom_qty:
+                line.write({"location_dest_id": location_dest.id})
                 line.shopfloor_checkout_done = True
-                line.location_dest = location_dest
             elif line.qty_done < line.product_uom_qty:
                 new_line, qty_check = line._split_qty_to_be_done(line.qty_done)
 
-                line.location_dest = location_dest
+                line.write({"location_dest_id": location_dest.id})
                 line.shopfloor_checkout_done = True
 
         return self._response_for_scan_products(partner_id, [])
@@ -399,12 +412,18 @@ class Reception(Component):
         )
 
         for line in product_move_lines:
-            picking = line.picking_id
+            line.shopfloor_checkout_done = False
 
-            if picking.state == "done":
-                continue
+        stock = self.actions_for("stock")
+        stock.validate_moves(product_move_lines.mapped("move_id"))
 
-            picking.action_done()
+        #for line in product_move_lines:
+        #    picking = line.picking_id
+
+        #    if picking.state == "done":
+        #        continue
+
+        #    picking.action_done()
 
         return self._response_for_start()
 
