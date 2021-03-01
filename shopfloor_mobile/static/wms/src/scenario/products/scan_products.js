@@ -6,7 +6,7 @@
 
 /* eslint-disable strict */
 Vue.component("scan-products", {
-    props: ["packing", "products", "fields","lastScanned"],
+    props: ["packing", "products", "fields", "lastScanned"],
     methods: {
         isLastScanned(product) {
             return product && product.barcode === this.lastScanned;
@@ -20,17 +20,17 @@ Vue.component("scan-products", {
             return this.products.every(prod => prod.qty_done === 0);
         },
         formatedProducts: function() {
-            return this.products.map(
-                    prod => ({
-                        id: prod.product.id,
-                        name: prod.product.name,
-                        qty: prod.quantity,
-                        qtyDone: prod.qty_done,
-                        done: prod.done,
-                        barcode: prod.product.barcode,
-                        supplierCode: prod.product.supplier_code,
-                    }),
-            ).sort((a, b) => a.done && !this.isLastScanned(a) ? 1 : -1);
+            return this.products
+                .map(prod => ({
+                    id: prod.product.id,
+                    name: prod.product.name,
+                    qty: prod.quantity,
+                    qtyDone: prod.qty_done,
+                    done: prod.done,
+                    barcode: prod.product.barcode,
+                    supplierCode: prod.product.supplier_code,
+                }))
+                .sort((a, b) => (a.done && !this.isLastScanned(a) ? 1 : -1));
         },
     },
     template: `

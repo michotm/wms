@@ -29,8 +29,8 @@ Vue.component("reception-fill-quantity", {
         return {
             quantity: 0,
             rules: {
-                required: value => !!value || 'Required',
-            }
-        }
+                required: value => !!value || "Required",
+            },
+        };
     },
 });

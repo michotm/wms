@@ -19,5 +19,5 @@ Vue.component("choosing-reception-picking", {
     `,
     data: () => ({
         scan_placeholder: "Scan product",
-    })
+    }),
 });

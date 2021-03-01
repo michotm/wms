@@ -1,25 +1,25 @@
-
 # Copyright 2020 Camptocamp SA (http://www.camptocamp.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 from functools import reduce
+
 from odoo import _, fields
 from odoo.osv import expression
 
 from odoo.addons.base_rest.components.service import to_bool, to_int
 from odoo.addons.component.core import Component
 
+from .exception import (
+    BarcodeNotFoundError,
+    BatchDoesNotExistError,
+    DestLocationNotAllowed,
+    OperationNotFoundError,
+    ProductNotInSource,
+    TooMuchProductInCommandError,
+    UnableToPickMoreError,
+    response_decorator,
+)
 from .service import to_float
 
-from .exception import (
-    BatchDoesNotExistError,
-    OperationNotFoundError,
-    BarcodeNotFoundError,
-    UnableToPickMoreError,
-    DestLocationNotAllowed,
-    TooMuchProductInCommandError,
-    ProductNotInSource,
-    response_decorator
-)
 
 class ClusterBatchPicking(Component):
     _inherit = "base.shopfloor.process"
@@ -86,31 +86,29 @@ class ClusterBatchPicking(Component):
         move_line = self.env["stock.move.line"].browse(move_line_id)
         if not move_line.exists():
             raise OperationNotFoundError(
-                state=next_state,
-                data=data,
+                state=next_state, data=data,
             )
         return move_line
-
 
     def _next_line_for_pick(self, move_lines):
         remaining_lines = self._get_lines_to_pick(move_lines)
         return fields.first(remaining_lines)
 
     def _create_data_for_scan_products(
-        self,
-        move_lines,
-        batch,
+        self, move_lines, batch,
     ):
         picking_destination = {}
         for picking in batch.picking_ids:
-            picking_destination[picking.id] = {
-            }
+            picking_destination[picking.id] = {}
 
             suggested_location_dest = []
             suggested_package_dest = []
 
             for line_in_picking in picking.move_line_ids:
-                if line_in_picking.location_dest_id and line_in_picking.location_dest_id != picking.location_dest_id:
+                if (
+                    line_in_picking.location_dest_id
+                    and line_in_picking.location_dest_id != picking.location_dest_id
+                ):
                     suggested_location_dest.append(
                         self.data.location(line_in_picking.mapped("location_dest_id"))
                     )
@@ -119,13 +117,27 @@ class ClusterBatchPicking(Component):
                         self.data.package(line_in_picking.mapped("result_package_id"))
                     )
 
-            suggested_package_dest = reduce(lambda l, x: l.append(x) or l if x not in l else l, suggested_package_dest, [])
-            suggested_location_dest = reduce(lambda l, x: l.append(x) or l if x not in l else l, suggested_location_dest, [])
+            suggested_package_dest = reduce(
+                lambda l, x: l.append(x) or l if x not in l else l,
+                suggested_package_dest,
+                [],
+            )
+            suggested_location_dest = reduce(
+                lambda l, x: l.append(x) or l if x not in l else l,
+                suggested_location_dest,
+                [],
+            )
 
-            picking_destination[picking.id]["suggested_package_dest"] = suggested_package_dest
-            picking_destination[picking.id]["suggested_location_dest"] = suggested_location_dest
+            picking_destination[picking.id][
+                "suggested_package_dest"
+            ] = suggested_package_dest
+            picking_destination[picking.id][
+                "suggested_location_dest"
+            ] = suggested_location_dest
 
-        move_lines_data = self.data.move_lines(move_lines, with_picking=True, with_packaging=True)
+        move_lines_data = self.data.move_lines(
+            move_lines, with_picking=True, with_packaging=True
+        )
         for line in move_lines_data:
             picking = line["picking"]
             line.update(picking_destination[picking["id"]])
@@ -134,7 +146,6 @@ class ClusterBatchPicking(Component):
             "move_lines": move_lines_data,
             "id": batch.id,
         }
-
 
     def _are_all_dest_location_same(self, batch):
         lines_to_unload = self._lines_to_unload(batch)
@@ -296,12 +307,21 @@ class ClusterBatchPicking(Component):
             return batch
         return self.env["stock.picking.batch"]
 
-    def _set_quantity_for_move_line(self, move_lines, batch, product, move_line, quantity_to_set, message=None, next_state="scan_products", data={}):
+    def _set_quantity_for_move_line(
+        self,
+        move_lines,
+        batch,
+        product,
+        move_line,
+        quantity_to_set,
+        message=None,
+        next_state="scan_products",
+        data={},
+    ):
         if product and move_line.product_id == product:
             if quantity_to_set > move_line.product_uom_qty:
                 raise TooMuchProductInCommandError(
-                    state=next_state,
-                    data=data,
+                    state=next_state, data=data,
                 )
 
             move_line.qty_done = quantity_to_set
@@ -309,8 +329,7 @@ class ClusterBatchPicking(Component):
             return self._response_for_scan_products(move_lines, batch, message)
         else:
             raise BarcodeNotFoundError(
-                state=next_state,
-                data=data,
+                state=next_state, data=data,
             )
 
     def _unload_write_destination_on_lines(self, lines, location):
@@ -351,7 +370,6 @@ class ClusterBatchPicking(Component):
 
     def _response_for_start(self, message=None, popup=None):
         return self._response(next_state="start", message=message, popup=popup)
-
 
     def _response_for_confirm_start(self, batch):
         return self._response(
@@ -417,21 +435,14 @@ class ClusterBatchPicking(Component):
         move_line = self._get_move_line(
             move_line_id,
             next_state="scan_products",
-            data=self._create_data_for_scan_products(
-                move_lines,
-                batch,
-            ),
+            data=self._create_data_for_scan_products(move_lines, batch,),
         )
 
         if move_line.location_id.id != location_id:
             raise ProductNotInSource(
                 state="scan_products",
-                data=self._create_data_for_scan_products(
-                    move_lines,
-                    batch,
-                ),
+                data=self._create_data_for_scan_products(move_lines, batch,),
             )
-
 
         search = self.actions_for("search")
 
@@ -445,10 +456,7 @@ class ClusterBatchPicking(Component):
             move_line,
             quantity_to_set,
             next_state="scan_products",
-            data=self._create_data_for_scan_products(
-                move_lines,
-                batch,
-            ),
+            data=self._create_data_for_scan_products(move_lines, batch,),
         )
 
     @response_decorator
@@ -478,10 +486,7 @@ class ClusterBatchPicking(Component):
         move_line = self._get_move_line(
             move_line_id,
             next_state="scan_products",
-            data=self._create_data_for_scan_products(
-                move_lines,
-                batch,
-            ),
+            data=self._create_data_for_scan_products(move_lines, batch,),
         )
 
         search = self.actions_for("search")
@@ -491,10 +496,7 @@ class ClusterBatchPicking(Component):
         if move_line.location_id.id != location_id:
             raise ProductNotInSource(
                 state="scan_products",
-                data=self._create_data_for_scan_products(
-                    move_lines,
-                    batch,
-                ),
+                data=self._create_data_for_scan_products(move_lines, batch,),
             )
 
         return self._set_quantity_for_move_line(
@@ -504,10 +506,7 @@ class ClusterBatchPicking(Component):
             move_line,
             qty,
             next_state="scan_products",
-            data=self._create_data_for_scan_products(
-                move_lines,
-                batch,
-            ),
+            data=self._create_data_for_scan_products(move_lines, batch,),
         )
 
     @response_decorator
@@ -515,7 +514,9 @@ class ClusterBatchPicking(Component):
         batch = self._get_batch(picking_batch_id)
         pickings = batch.mapped("picking_ids")
         move_lines = pickings.mapped("move_line_ids")
-        move_line = self._get_move_line(move_line_id, next_state="scan_products", data="move_lines")
+        move_line = self._get_move_line(
+            move_line_id, next_state="scan_products", data="move_lines"
+        )
 
         search = self.actions_for("search")
 
@@ -525,10 +526,7 @@ class ClusterBatchPicking(Component):
         if not location_dest and not bin_package:
             raise BarcodeNotFoundError(
                 state="scan_products",
-                data=self._create_data_for_scan_products(
-                    move_lines,
-                    batch,
-                ),
+                data=self._create_data_for_scan_products(move_lines, batch,),
             )
 
         if location_dest.id is move_line.location_id.id:
@@ -544,22 +542,15 @@ class ClusterBatchPicking(Component):
                     "body": "Product put back in place",
                 },
                 next_state="scan_products",
-                data=self._create_data_for_scan_products(
-                    move_lines,
-                    batch,
-                ),
+                data=self._create_data_for_scan_products(move_lines, batch,),
             )
-
 
         new_line, qty_check = move_line._split_qty_to_be_done(qty)
 
         if qty_check == "greater":
             raise UnableToPickMoreError(
                 state="scan_products",
-                data=self._create_data_for_scan_products(
-                    move_lines,
-                    batch,
-                ),
+                data=self._create_data_for_scan_products(move_lines, batch,),
                 quantity=move_line.product_uom_qty,
             )
 
@@ -569,10 +560,7 @@ class ClusterBatchPicking(Component):
             ):
                 raise DestLocationNotAllowed(
                     state="scan_products",
-                    data=self._create_data_for_scan_products(
-                        move_lines,
-                        batch,
-                    ),
+                    data=self._create_data_for_scan_products(move_lines, batch,),
                 )
 
             move_line.write({"qty_done": qty, "location_dest_id": location_dest.id})
@@ -594,7 +582,9 @@ class ClusterBatchPicking(Component):
                 batch.mapped("picking_ids.move_line_ids"),
                 batch,
                 message=self.msg_store.x_units_put_in_package(
-                    move_line.qty_done, move_line.product_id, move_line.result_package_id
+                    move_line.qty_done,
+                    move_line.product_id,
+                    move_line.result_package_id,
                 ),
             )
 
@@ -623,17 +613,16 @@ class ClusterBatchPicking(Component):
         batch = self._get_batch(picking_batch_id)
         pickings = batch.mapped("picking_ids")
         move_lines = pickings.mapped("move_line_ids")
-        move_line = self._get_move_line(move_line_id, next_state="scan_products", data="move_lines")
+        move_line = self._get_move_line(
+            move_line_id, next_state="scan_products", data="move_lines"
+        )
 
         move_line.qty_done = 0
         move_line.shopfloor_checkout_done = False
         move_line.result_package_id = None
         move_line.location_dest_id = move_line.picking_id.location_dest_id
 
-        return self._response_for_scan_products(
-            move_lines,
-            batch,
-        )
+        return self._response_for_scan_products(move_lines, batch,)
 
     @response_decorator
     def list_batch(self):
@@ -766,7 +755,9 @@ class ClusterBatchPicking(Component):
           to handle the closing of the batch to create backorders (_unload_end)
         """
         batch = self._get_batch(picking_batch_id)
-        move_line = self._get_move_line(move_line_id, next_state="scan_products", data="move_lines")
+        move_line = self._get_move_line(
+            move_line_id, next_state="scan_products", data="move_lines"
+        )
 
         inventory = self.actions_for("inventory")
         # create a draft inventory for a user to check
@@ -803,9 +794,7 @@ class ClusterBatchPicking(Component):
         return self._response_for_scan_products(
             move_lines,
             batch,
-            message=self.msg_store.stock_issue_for_line(
-                move.product_id.name,
-            ),
+            message=self.msg_store.stock_issue_for_line(move.product_id.name,),
         )
 
     def _domain_stock_issue_unlink_lines(self, move_line):
@@ -830,7 +819,6 @@ class ClusterBatchPicking(Component):
             ("picking_id.batch_id", "=", batch.id),
         ]
         return domain
-
 
 
 class ShopfloorClusterBatchPickingValidator(Component):
@@ -933,27 +921,15 @@ class ShopfloorClusterPickingValidatorResponse(Component):
         return self._response_schema(next_states={"confirm_start"})
 
     def set_quantity(self):
-        return self._response_schema(
-            next_states={
-                "scan_products",
-            }
-        )
+        return self._response_schema(next_states={"scan_products",})
 
     def set_destination(self):
         return self._response_schema(
-            next_states={
-                "unload_all",
-                "unload_single",
-                "scan_products",
-            }
+            next_states={"unload_all", "unload_single", "scan_products",}
         )
 
     def scan_product(self):
-        return self._response_schema(
-            next_states={
-                "scan_products",
-            }
-        )
+        return self._response_schema(next_states={"scan_products",})
 
     def confirm_start(self):
         return self._response_schema(
@@ -983,9 +959,7 @@ class ShopfloorClusterPickingValidatorResponse(Component):
         )
 
     def cancel_line(self):
-        return self._response_schema(
-            next_states={"scan_products"}
-        )
+        return self._response_schema(next_states={"scan_products"})
 
     def set_destination_all(self):
         return self._response_schema(
@@ -1015,7 +989,9 @@ class ShopfloorClusterPickingValidatorResponse(Component):
     @property
     def _schema_for_move_lines_details(self):
         return {
-            "move_lines": self.schemas._schema_list_of(self.schemas.move_line(with_packaging=True, with_picking=True)),
+            "move_lines": self.schemas._schema_list_of(
+                self.schemas.move_line(with_packaging=True, with_picking=True)
+            ),
             "id": {"required": True, "type": "integer"},
         }
 

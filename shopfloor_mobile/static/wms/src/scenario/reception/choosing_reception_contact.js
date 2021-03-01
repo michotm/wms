@@ -26,5 +26,5 @@ Vue.component("choosing-reception-contact", {
     `,
     data: () => ({
         scan_placeholder: "Scan contact / receipt / product",
-    })
+    }),
 });

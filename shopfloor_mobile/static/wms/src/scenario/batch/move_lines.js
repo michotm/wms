@@ -5,7 +5,14 @@
  */
 
 Vue.component("batch-move-line", {
-    props: ["moveLines", "fields", "lastScanned", "selectedLocation", "lastPickedLine", "currentLocation"],
+    props: [
+        "moveLines",
+        "fields",
+        "lastScanned",
+        "selectedLocation",
+        "lastPickedLine",
+        "currentLocation",
+    ],
     methods: {
         isLastScanned(product) {
             return product && product.barcode === this.lastScanned;
@@ -13,15 +20,15 @@ Vue.component("batch-move-line", {
         getLineDest(line) {
             if (line.suggested_package_dest.length > 0) {
                 return line.suggested_package_dest[0];
-            }
-            else if (line.suggested_location_dest.length > 0) {
+            } else if (line.suggested_location_dest.length > 0) {
                 return line.suggested_location_dest[0];
             }
-        }
+        },
     },
     computed: {
         linesBySource: function() {
-            const lines = this.moveLines.map((line) => {
+            const lines = this.moveLines
+                .map(line => {
                     return {
                         name: line.product.display_name,
                         qty: line.quantity,
@@ -33,28 +40,38 @@ Vue.component("batch-move-line", {
                         id: line.id,
                         dest: this.getLineDest(line),
                         picking_dest: line.location_dest,
-                    }
-            }).filter(line => line.qty > 0 && !(line.done && line.id !==  this.lastPickedLine)).sort((a, b) => a.done ? 1 : -1);
+                    };
+                })
+                .filter(
+                    line =>
+                        line.qty > 0 && !(line.done && line.id !== this.lastPickedLine)
+                )
+                .sort((a, b) => (a.done ? 1 : -1));
 
             const selected = lines.find(this.isLastScanned) || {};
             selected.selected = true;
 
-            const sources = lines.map(line => line.source).filter((value, i, array) => {
-                return array.findIndex(v => v.id === value.id) === i;
-            });
+            const sources = lines
+                .map(line => line.source)
+                .filter((value, i, array) => {
+                    return array.findIndex(v => v.id === value.id) === i;
+                });
 
-            const sourceWithLines = sources.map(source => {
-                return {
-                    source,
-                    lines: lines.filter(line =>
-                        line.source.id === source.id,
-                    ).sort((a, b) => !a.selected ? 1 : -1),
-                }
-            }).filter(source => source.lines.length > 0).sort(
-                (a, b) => a.name < b.name ? 1 : -1
+            const sourceWithLines = sources
+                .map(source => {
+                    return {
+                        source,
+                        lines: lines
+                            .filter(line => line.source.id === source.id)
+                            .sort((a, b) => (!a.selected ? 1 : -1)),
+                    };
+                })
+                .filter(source => source.lines.length > 0)
+                .sort((a, b) => (a.name < b.name ? 1 : -1));
+
+            const pivotIndex = sourceWithLines.findIndex(
+                source => source.source.id === this.currentLocation
             );
-
-            const pivotIndex = sourceWithLines.findIndex(source => source.source.id === this.currentLocation);
 
             if (pivotIndex !== -1) {
                 const removed = sourceWithLines.splice(0, pivotIndex);
@@ -95,5 +112,5 @@ Vue.component("batch-move-line", {
                 </detail-simple-product>
             </div>
         </v-container>
-    `
+    `,
 });

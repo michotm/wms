@@ -235,8 +235,8 @@ const Checkout = {
             return [
                 {path: "qty", label: "Quantity"},
                 {path: "qtyDone", label: "Done"},
-            ]
-        }
+            ];
+        },
     },
     methods: {
         screen_title: function() {
@@ -293,10 +293,13 @@ const Checkout = {
                 scan_products: {
                     on_scan: scanned => {
                         const intInText = parseInt(scanned.text);
-                        if (!isNaN(intInText) && intInText < 10000 && this.lastScanned) {
+                        if (
+                            !isNaN(intInText) &&
+                            intInText < 10000 &&
+                            this.lastScanned
+                        ) {
                             this.state.on_user_confirm(intInText);
-                        }
-                        else {
+                        } else {
                             this.wait_call(
                                 this.odoo.call("scan_product", {
                                     barcode: scanned.text,
@@ -307,7 +310,7 @@ const Checkout = {
                             this.lastScanned = scanned.text;
                         }
                     },
-                    on_user_confirm: (qty) => {
+                    on_user_confirm: qty => {
                         this.wait_call(
                             this.odoo.call("scan_product", {
                                 barcode: this.lastScanned,
@@ -337,8 +340,9 @@ const Checkout = {
                     skipPack: () => {
                         this.wait_call(
                             this.odoo.call("scan_document", {
-                                 barcode: this.state.data.picking.move_lines[0].location_src.barcode,
-                                 skip: parseInt(this.state.data.skip || 0) + 1,
+                                barcode: this.state.data.picking.move_lines[0]
+                                    .location_src.barcode,
+                                skip: parseInt(this.state.data.skip || 0) + 1,
                             })
                         );
                         this.lastScanned = null;
@@ -359,7 +363,10 @@ const Checkout = {
                     },
                     on_scan: scanned => {
                         this.wait_call(
-                            this.odoo.call("scan_document", {barcode: scanned.text, skip: this.$route.query.skip})
+                            this.odoo.call("scan_document", {
+                                barcode: scanned.text,
+                                skip: this.$route.query.skip,
+                            })
                         );
                     },
                     on_manual_selection: evt => {

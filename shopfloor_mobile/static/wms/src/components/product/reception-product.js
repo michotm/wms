@@ -9,9 +9,9 @@ Vue.component("reception-product", {
     methods: {
         line_color: function(line) {
             if (line.done) {
-                return this.utils.colors.color_for('pack_line_done');
+                return this.utils.colors.color_for("pack_line_done");
             }
-        }
+        },
     },
     template: `
     <item-detail-card

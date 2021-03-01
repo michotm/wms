@@ -146,7 +146,7 @@ const ClusterBatchPicking = {
                 })
             );
         },
-        find_move_line: function(move_lines, barcode, filter=() => true) {
+        find_move_line: function(move_lines, barcode, filter = () => true) {
             let move_line;
 
             move_lines.filter(filter).forEach(line => {
@@ -157,7 +157,7 @@ const ClusterBatchPicking = {
 
             return move_line || {};
         },
-        find_src_location: function(move_lines, barcode, filter=() => true) {
+        find_src_location: function(move_lines, barcode, filter = () => true) {
             let location_src = "";
 
             move_lines.filter(filter).forEach(line => {
@@ -167,7 +167,7 @@ const ClusterBatchPicking = {
             });
 
             return location_src;
-        }
+        },
     },
     data: function() {
         // TODO: add a title to each screen
@@ -223,15 +223,14 @@ const ClusterBatchPicking = {
                 },
                 scan_products: {
                     actionStockOut: ({move_line_id, event_name}) => {
-                        if (event_name === 'actionStockOut') {
+                        if (event_name === "actionStockOut") {
                             this.wait_call(
-                                this.odoo.call('stock_issue', {
+                                this.odoo.call("stock_issue", {
                                     move_line_id,
                                     picking_batch_id: this.state.data.id,
                                 })
                             );
-                        }
-                        else if (event_name ==='cancelLine') {
+                        } else if (event_name === "cancelLine") {
                             this.wait_call(
                                 this.odoo.call("cancel_line", {
                                     move_line_id,
@@ -241,15 +240,19 @@ const ClusterBatchPicking = {
                         }
                     },
                     on_scan: scanned => {
-                        const intInText = "" + scanned.text == parseInt(scanned.text, 10) && parseInt(scanned.text, 10);
+                        const intInText =
+                            "" + scanned.text == parseInt(scanned.text, 10) &&
+                            parseInt(scanned.text, 10);
                         let move_line = this.find_move_line(
                             this.state.data.move_lines,
                             scanned.text,
-                            line => !line.done);
+                            line => !line.done
+                        );
                         let last_move_line = this.find_move_line(
                             this.state.data.move_lines,
                             this.lastScanned,
-                            line => !line.done);
+                            line => !line.done
+                        );
 
                         //0) Nothing selected:
                         //  * Scan a source location -> A
@@ -262,15 +265,14 @@ const ClusterBatchPicking = {
                         const selectedLocation = this.find_src_location(
                             this.state.data.move_lines,
                             scanned.text,
-                            line => !line.done,
+                            line => !line.done
                         );
 
                         if (selectedLocation && !last_move_line.id) {
                             this.selectedLocation = selectedLocation;
                             this.currentLocation = selectedLocation;
                             this.reset_notification();
-                        }
-                        else if (this.selectedLocation) {
+                        } else if (this.selectedLocation) {
                             if (move_line.id) {
                                 if (last_move_line.id === move_line.id) {
                                     this.wait_call(
@@ -280,14 +282,17 @@ const ClusterBatchPicking = {
                                             picking_batch_id: this.state.data.id,
                                             location_id: this.selectedLocation,
                                             qty: 1,
-                                        })
-                                        ,(result) => {
-                                            if (!result.message || result.message.message_type !== "error") {
+                                        }),
+                                        result => {
+                                            if (
+                                                !result.message ||
+                                                result.message.message_type !== "error"
+                                            ) {
                                                 this.lastScanned = scanned.text;
                                             }
-                                        });
-                                }
-                                else if (!last_move_line.id) {
+                                        }
+                                    );
+                                } else if (!last_move_line.id) {
                                     this.wait_call(
                                         this.odoo.call("set_quantity", {
                                             barcode: scanned.text,
@@ -295,16 +300,18 @@ const ClusterBatchPicking = {
                                             picking_batch_id: this.state.data.id,
                                             location_id: this.selectedLocation,
                                             qty: 1,
-                                        })
-                                        ,(result) => {
-                                            if (!result.message || result.message.message_type !== "error") {
+                                        }),
+                                        result => {
+                                            if (
+                                                !result.message ||
+                                                result.message.message_type !== "error"
+                                            ) {
                                                 this.lastScanned = scanned.text;
                                             }
-                                        });
+                                        }
+                                    );
                                 }
-
-                            }
-                            else {
+                            } else {
                                 if (!isNaN(intInText) && intInText === 0) {
                                     this.wait_call(
                                         this.odoo.call("set_quantity", {
@@ -318,8 +325,12 @@ const ClusterBatchPicking = {
 
                                     this.lastScanned = null;
                                     this.selectedLocation = null;
-                                }
-                                else if (!isNaN(intInText) && intInText > 0 && intInText < 10000 && this.lastScanned) {
+                                } else if (
+                                    !isNaN(intInText) &&
+                                    intInText > 0 &&
+                                    intInText < 10000 &&
+                                    this.lastScanned
+                                ) {
                                     this.wait_call(
                                         this.odoo.call("set_quantity", {
                                             barcode: this.lastScanned,
@@ -329,55 +340,54 @@ const ClusterBatchPicking = {
                                             qty: intInText,
                                         })
                                     );
-                                }
-                                else if (move_line.id) {
+                                } else if (move_line.id) {
                                     this.set_message({
-                                        message_type: 'error',
+                                        message_type: "error",
                                         body: `You can't scan another product before scanning a package or destination location`,
                                     });
-                                }
-                                else if (last_move_line.id) {
+                                } else if (last_move_line.id) {
                                     this.wait_call(
                                         this.odoo.call("set_destination", {
                                             barcode: scanned.text,
                                             move_line_id: last_move_line.id,
                                             picking_batch_id: this.state.data.id,
                                             qty: last_move_line.qty_done,
-                                        })
-                                    , (result) => {
-                                        if (result.message && result.message.message_type === "success") {
-                                            this.lastScanned = null;
-                                            this.selectedLocation = null;
-                                            this.lastPickedLine = last_move_line.id;
+                                        }),
+                                        result => {
+                                            if (
+                                                result.message &&
+                                                result.message.message_type ===
+                                                    "success"
+                                            ) {
+                                                this.lastScanned = null;
+                                                this.selectedLocation = null;
+                                                this.lastPickedLine = last_move_line.id;
+                                            }
                                         }
-                                    });
-                                }
-                                else {
+                                    );
+                                } else {
                                     const selectedFromAllLocation = this.find_src_location(
                                         this.state.data.move_lines,
-                                        scanned.text,
+                                        scanned.text
                                     );
 
                                     if (selectedFromAllLocation === "") {
                                         this.set_message({
-                                            message_type: 'error',
+                                            message_type: "error",
                                             body: `You need to scan a product or a location`,
                                         });
-                                    }
-                                    else {
+                                    } else {
                                         this.set_message({
-                                            message_type: 'error',
+                                            message_type: "error",
                                             body: `You can't select this location`,
                                         });
                                     }
-
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             const selectedFromAllLocation = this.find_src_location(
                                 this.state.data.move_lines,
-                                scanned.text,
+                                scanned.text
                             );
 
                             if (selectedFromAllLocation === "") {
@@ -385,15 +395,13 @@ const ClusterBatchPicking = {
                                     message_type: "error",
                                     body: "You need to scan a source location",
                                 });
-                            }
-                            else {
+                            } else {
                                 this.set_message({
-                                    message_type: 'error',
+                                    message_type: "error",
                                     body: `You can't select this location`,
                                 });
                             }
                         }
-
                     },
                     shipFinished: () => {
                         this.wait_call(
@@ -413,10 +421,21 @@ const ClusterBatchPicking = {
                     },
                     skipPack: () => {
                         this.lastScanned = null;
-                        this.state_to('select_document', {skip: parseInt(this.$route.query.skip || 0) + 1});
+                        this.state_to("select_document", {
+                            skip: parseInt(this.$route.query.skip || 0) + 1,
+                        });
                     },
                     display_info: {
-                        scan_placeholder: () => `Scan a ${!this.selectedLocation ? "source location" : ""}${this.selectedLocation && !this.lastScanned ? "Product" : ""}${this.selectedLocation && this.lastScanned ? "Quantity, package or destination location" : ""}`,
+                        scan_placeholder: () =>
+                            `Scan a ${!this.selectedLocation ? "source location" : ""}${
+                                this.selectedLocation && !this.lastScanned
+                                    ? "Product"
+                                    : ""
+                            }${
+                                this.selectedLocation && this.lastScanned
+                                    ? "Quantity, package or destination location"
+                                    : ""
+                            }`,
                     },
                     fields: [
                         {path: "supplierCode", label: "Vendor code", klass: "loud"},

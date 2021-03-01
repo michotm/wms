@@ -42,20 +42,14 @@ class ReceptionCase(ReceptionCommonCase):
         picking.action_assign()
 
         cls.picking2 = picking = cls._create_picking(
-            lines=[
-                (cls.product_a, 10),
-                (cls.product_d, 10),
-            ]
+            lines=[(cls.product_a, 10), (cls.product_d, 10),]
         )
         for move in picking.move_lines:
             cls._fill_stock_for_moves(move)
         picking.action_assign()
 
         cls.picking3 = picking = cls._create_picking(
-            lines=[
-                (cls.product_a, 10),
-                (cls.product_b, 10),
-            ]
+            lines=[(cls.product_a, 10), (cls.product_b, 10),]
         )
         for move in picking.move_lines:
             cls._fill_stock_for_moves(move)
@@ -64,8 +58,7 @@ class ReceptionCase(ReceptionCommonCase):
     def test_scan_document_by_picking(self):
         picking = self.picking1
         response = self.service.dispatch(
-            "scan_document",
-            params={"barcode": picking.name},
+            "scan_document", params={"barcode": picking.name},
         )
         self.assert_response(
             response,
@@ -76,8 +69,7 @@ class ReceptionCase(ReceptionCommonCase):
     def test_scan_document_by_product(self):
         expected = self.picking1 | self.picking3
         response = self.service.dispatch(
-            "scan_document",
-            params={"barcode": self.product_b.barcode},
+            "scan_document", params={"barcode": self.product_b.barcode},
         )
         self.assert_response(
             response,
@@ -91,12 +83,14 @@ class ReceptionCase(ReceptionCommonCase):
         response = self.service.dispatch(
             "increase_received_qty",
             params={
-                "picking_id": picking.id, "product_id": self.product_a.id,
-                "qty_done": 2})
+                "picking_id": picking.id,
+                "product_id": self.product_a.id,
+                "qty_done": 2,
+            },
+        )
         print(response)
         self.assert_response(
             response,
             next_state="manual_selection",
             data={"pickings": self.data.pickings(expected)},
         )
-

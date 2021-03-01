@@ -1,24 +1,23 @@
 # Copyright 2020 Akretion (https://akretion.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-import pdb
 from odoo import _
 
 from odoo.addons.base_rest.components.service import to_int
 from odoo.addons.component.core import Component
 
-from .service import to_float
-
 from .exception import (
-    StockPickingNotFound,
     BarcodeNotFoundError,
     CannotMovePickingType,
-    StockPickingNotAvailable,
-    OperationNotFoundError,
-    TooMuchProductInCommandError,
-    ProductNotInOrder,
     DestLocationNotAllowed,
+    OperationNotFoundError,
+    ProductNotInOrder,
+    StockPickingNotAvailable,
+    StockPickingNotFound,
+    TooMuchProductInCommandError,
     response_decorator,
 )
+from .service import to_float
+
 
 class Reception(Component):
     """
@@ -50,21 +49,23 @@ class Reception(Component):
 
     @staticmethod
     def _filter_lines_to_receive(move_line):
-        return move_line.product_uom_qty != move_line.qty_done and not move_line.shopfloor_checkout_done
+        return (
+            move_line.product_uom_qty != move_line.qty_done
+            and not move_line.shopfloor_checkout_done
+        )
 
     def _create_data_for_scan_products(self, partner_id, move_line_ids):
         pickings = self.env["stock.picking"].search(
             self._search_picking_by_partner_id(partner_id),
             order=self._order_for_list_stock_picking(),
         )
-        move_lines = pickings.mapped('move_line_ids')
+        move_lines = pickings.mapped("move_line_ids")
         move_lines_picked = self.env["stock.move.line"].search(
             self._search_move_line_picked(partner_id),
             order=self._order_for_move_line(),
         )
         move_lines_picking = self.env["stock.move.line"].search(
-            [("id", "in", move_line_ids)],
-            order=self._order_for_move_line(),
+            [("id", "in", move_line_ids)], order=self._order_for_move_line(),
         )
         move_lines_data = {
             "move_lines": self.data.move_lines(move_lines),
@@ -101,18 +102,15 @@ class Reception(Component):
 
     def _get_move_line(self, move_line_filter, partner_id, move_lines_picking):
         product_move_lines = self.env["stock.move.line"].search(
-            move_line_filter,
-            order=self._order_for_move_line(),
+            move_line_filter, order=self._order_for_move_line(),
         )
 
         if not product_move_lines.exists():
             move_lines_data = self._create_data_for_scan_products(
-                partner_id,
-                move_lines_picking,
+                partner_id, move_lines_picking,
             )
             raise ProductNotInOrder(
-                state="scan_products",
-                data=move_lines_data,
+                state="scan_products", data=move_lines_data,
             )
 
         return product_move_lines
@@ -143,17 +141,16 @@ class Reception(Component):
         ]
 
     def _set_product_move_line_quantity(
-        self,
-        partner_id,
-        product_move_lines,
-        qty,
+        self, partner_id, product_move_lines, qty,
     ):
-        quantity_to_add = qty;
-        move_line_index = 0;
+        quantity_to_add = qty
+        move_line_index = 0
 
         while quantity_to_add > 0 and move_line_index < len(product_move_lines):
             current_move_line = product_move_lines[move_line_index]
-            quantity_possible_to_add = current_move_line.product_uom_qty - current_move_line.qty_done
+            quantity_possible_to_add = (
+                current_move_line.product_uom_qty - current_move_line.qty_done
+            )
             quantity_added_to_move_line = min(quantity_possible_to_add, quantity_to_add)
             current_move_line.qty_done += quantity_added_to_move_line
             quantity_to_add -= quantity_added_to_move_line
@@ -163,12 +160,10 @@ class Reception(Component):
 
         if quantity_to_add > 0:
             move_lines_data = self._create_data_for_scan_products(
-                partner_id,
-                product_move_lines.ids,
+                partner_id, product_move_lines.ids,
             )
             raise OperationNotFoundError(
-                state="scan_products",
-                data=move_lines_data,
+                state="scan_products", data=move_lines_data,
             )
 
     def _lines_checkout_done(self, picking):
@@ -185,14 +180,11 @@ class Reception(Component):
 
     def _response_for_scan_products(self, partner_id, move_line_ids=None, message=None):
         move_lines_data = self._create_data_for_scan_products(
-            partner_id,
-            move_line_ids,
+            partner_id, move_line_ids,
         )
 
         return self._response(
-            next_state="scan_products",
-            data=move_lines_data,
-            message=message,
+            next_state="scan_products", data=move_lines_data, message=message,
         )
 
     def _response_for_start(self, message=None):
@@ -200,7 +192,7 @@ class Reception(Component):
             self._domain_for_list_stock_picking(),
             order=self._order_for_list_stock_picking(),
         )
-        partners = pickings.mapped('partner_id')
+        partners = pickings.mapped("partner_id")
         partners_data = self.data.partners(partners)
 
         for partner in partners_data:
@@ -310,15 +302,11 @@ class Reception(Component):
     @response_decorator
     def scan_product(self, partner_id, barcode):
         product_move_lines = self._get_move_line(
-            self._search_move_line_by_product(partner_id, barcode),
-            partner_id,
-            [],
+            self._search_move_line_by_product(partner_id, barcode), partner_id, [],
         )
 
         self._set_product_move_line_quantity(
-            partner_id,
-            product_move_lines,
-            1,
+            partner_id, product_move_lines, 1,
         )
 
         return self._response_for_scan_products(partner_id, product_move_lines.ids)
@@ -326,32 +314,26 @@ class Reception(Component):
     @response_decorator
     def set_quantity(self, partner_id, barcode, move_lines_picking, qty):
         product_move_lines = self._get_move_line(
-            [("id", "in", move_lines_picking)],
-            partner_id,
-            [],
+            [("id", "in", move_lines_picking)], partner_id, [],
         )
-        quantity_available = 0;
+        quantity_available = 0
 
         for line in product_move_lines:
             quantity_available += line.product_uom_qty
 
         if quantity_available < qty:
             move_lines_data = self._create_data_for_scan_products(
-                partner_id,
-                product_move_lines.ids,
+                partner_id, product_move_lines.ids,
             )
             raise TooMuchProductInCommandError(
-                state="scan_products",
-                data=move_lines_data,
+                state="scan_products", data=move_lines_data,
             )
 
         for line in product_move_lines:
-            line.qty_done = 0;
+            line.qty_done = 0
 
         self._set_product_move_line_quantity(
-            partner_id,
-            product_move_lines,
-            qty,
+            partner_id, product_move_lines, qty,
         )
 
         return self._response_for_scan_products(partner_id, product_move_lines.ids)
@@ -359,9 +341,7 @@ class Reception(Component):
     @response_decorator
     def set_destination(self, partner_id, barcode, move_lines_picking, location_dest):
         product_move_lines = self._get_move_line(
-            [("id", "in", move_lines_picking)],
-            partner_id,
-            [],
+            [("id", "in", move_lines_picking)], partner_id, [],
         )
 
         search = self.actions_for("search")
@@ -372,24 +352,22 @@ class Reception(Component):
             raise BarcodeNotFoundError(
                 state="scan_products",
                 data=self._create_data_for_scan_products(
-                    partner_id,
-                    product_move_lines.ids,
+                    partner_id, product_move_lines.ids,
                 ),
             )
 
-        #Here we assume that all move_line have the same destination
+        # Here we assume that all move_line have the same destination
         if not location_dest.is_sublocation_of(
             product_move_lines[0].picking_id.location_dest_id
         ):
             raise DestLocationNotAllowed(
                 state="scan_products",
                 data=self._create_data_for_scan_products(
-                    partner_id,
-                    product_move_lines.ids,
+                    partner_id, product_move_lines.ids,
                 ),
             )
 
-        quantity_stored = 0;
+        quantity_stored = 0
 
         for line in product_move_lines:
             quantity_stored += line.qty_done
@@ -402,21 +380,23 @@ class Reception(Component):
                 line.write({"location_dest_id": location_dest.id})
                 line.shopfloor_checkout_done = True
 
-        return self._response_for_scan_products(partner_id, [], {
-            "message_type": "success",
-            "body": _("{} {} put in {}").format(
-                quantity_stored,
-                product_move_lines[0].product_id.name,
-                location_dest.name,
-            )
-        })
+        return self._response_for_scan_products(
+            partner_id,
+            [],
+            {
+                "message_type": "success",
+                "body": _("{} {} put in {}").format(
+                    quantity_stored,
+                    product_move_lines[0].product_id.name,
+                    location_dest.name,
+                ),
+            },
+        )
 
     @response_decorator
     def reset_product(self, partner_id, move_lines_picking):
         product_move_lines = self._get_move_line(
-            [("id", "in", move_lines_picking)],
-            partner_id,
-            [],
+            [("id", "in", move_lines_picking)], partner_id, [],
         )
 
         for line in product_move_lines:
@@ -425,21 +405,15 @@ class Reception(Component):
         return self._response_for_scan_products(
             partner_id,
             [],
-            {
-                "message_type": "success",
-                "body": "Products put back in place",
-            }
+            {"message_type": "success", "body": "Products put back in place",},
         )
-
 
     @response_decorator
     def finish_receipt(self, partner_id, move_lines_picked):
         # get move_lines
         # for all move_lines mark picking as done
         product_move_lines = self._get_move_line(
-            [("id", "in", move_lines_picked)],
-            partner_id,
-            [],
+            [("id", "in", move_lines_picked)], partner_id, [],
         )
 
         for line in product_move_lines:
@@ -448,7 +422,7 @@ class Reception(Component):
         stock = self.actions_for("stock")
         stock.validate_moves(product_move_lines.mapped("move_id"))
 
-        #for line in product_move_lines:
+        # for line in product_move_lines:
         #    picking = line.picking_id
 
         #    if picking.state == "done":
@@ -457,6 +431,7 @@ class Reception(Component):
         #    picking.action_done()
 
         return self._response_for_start()
+
 
 class ShopfloorReceptionValidator(Component):
     """Validators for the Checkout endpoints"""
@@ -481,7 +456,11 @@ class ShopfloorReceptionValidator(Component):
         return {
             "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
             "barcode": {"required": True, "type": "string"},
-            "move_lines_picking": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
+            "move_lines_picking": {
+                "required": True,
+                "type": "list",
+                "schema": {"coerce": to_int, "type": "integer"},
+            },
             "qty": {"coerce": to_int, "required": True, "type": "integer"},
         }
 
@@ -489,21 +468,34 @@ class ShopfloorReceptionValidator(Component):
         return {
             "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
             "barcode": {"required": True, "type": "string"},
-            "move_lines_picking": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
+            "move_lines_picking": {
+                "required": True,
+                "type": "list",
+                "schema": {"coerce": to_int, "type": "integer"},
+            },
             "location_dest": {"required": True, "type": "string"},
         }
 
     def finish_receipt(self):
         return {
             "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
-            "move_lines_picked": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
+            "move_lines_picked": {
+                "required": True,
+                "type": "list",
+                "schema": {"coerce": to_int, "type": "integer"},
+            },
         }
 
     def reset_product(self):
         return {
             "partner_id": {"coerce": to_int, "required": True, "type": "integer"},
-            "move_lines_picking": {"required": True, "type": "list", "schema": {"coerce": to_int, "type": "integer"}},
+            "move_lines_picking": {
+                "required": True,
+                "type": "list",
+                "schema": {"coerce": to_int, "type": "integer"},
+            },
         }
+
 
 class ShopfloorReceptionValidatorResponse(Component):
     """Validators for the Checkout endpoints responses"""
@@ -548,7 +540,6 @@ class ShopfloorReceptionValidatorResponse(Component):
     def reset_product(self):
         return self._response_schema(next_states={"scan_products"})
 
-
     def _schema_stock_picking(self, lines_with_packaging=False):
         schema = self.schemas.picking()
         schema.update(
@@ -574,7 +565,9 @@ class ShopfloorReceptionValidatorResponse(Component):
     @property
     def _schema_partner_list(self):
         return {
-            "partners": self.schemas._schema_list_of(self.schemas.partner(with_picking_count=True)),
+            "partners": self.schemas._schema_list_of(
+                self.schemas.partner(with_picking_count=True)
+            ),
         }
 
     @property
@@ -589,5 +582,7 @@ class ShopfloorReceptionValidatorResponse(Component):
             "move_lines": self.schemas._schema_list_of(self.schemas.move_line()),
             "id": {"required": True, "type": "integer"},
             "move_lines_picked": self.schemas._schema_list_of(self.schemas.move_line()),
-            "move_lines_picking": self.schemas._schema_list_of(self.schemas.move_line()),
+            "move_lines_picking": self.schemas._schema_list_of(
+                self.schemas.move_line()
+            ),
         }

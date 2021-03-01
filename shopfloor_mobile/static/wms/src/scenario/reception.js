@@ -48,8 +48,7 @@ const Reception = {
             </div>
         </Screen>
     `,
-    mounted() {
-    },
+    mounted() {},
     computed: {
         partnerId: function() {
             return this.state.data.id;
@@ -63,10 +62,8 @@ const Reception = {
             errorNotFound: undefined,
             states: {
                 start: {
-                    onSelectContact: (partner_id) => {
-                        this.wait_call(
-                            this.odoo.call('list_move_lines', {partner_id}),
-                        );
+                    onSelectContact: partner_id => {
+                        this.wait_call(this.odoo.call("list_move_lines", {partner_id}));
                     },
                     fields: [
                         {
@@ -75,10 +72,8 @@ const Reception = {
                         },
                     ],
                     enter: () => {
-                        if (!this.state_get_data('start').partners) {
-                            this.wait_call(
-                                this.odoo.call('list_vendor_with_pickings'),
-                            );
+                        if (!this.state_get_data("start").partners) {
+                            this.wait_call(this.odoo.call("list_vendor_with_pickings"));
                         }
                     },
                 },
@@ -124,67 +119,77 @@ const Reception = {
                     },
                     onFinish: () => {
                         this.wait_call(
-                            this.odoo.call('finish_receipt', {
+                            this.odoo.call("finish_receipt", {
                                 partner_id: this.partnerId,
-                                move_lines_picked: this.state.data.move_lines_picked.map(line => line.id),
-                            }),
+                                move_lines_picked: this.state.data.move_lines_picked.map(
+                                    line => line.id
+                                ),
+                            })
                         );
                     },
                     onScanProduct: ({text: barcode}) => {
-                        const intInText = "" + barcode == parseInt(barcode, 10) && parseInt(barcode, 10);
-                        const {
-                            move_lines_picking,
-                        } = this.state.data;
+                        const intInText =
+                            "" + barcode == parseInt(barcode, 10) &&
+                            parseInt(barcode, 10);
+                        const {move_lines_picking} = this.state.data;
 
                         if (move_lines_picking.length > 0) {
                             if (!isNaN(intInText) && intInText === 0) {
                                 this.wait_call(
-                                    this.odoo.call('reset_product', {
+                                    this.odoo.call("reset_product", {
                                         partner_id: this.partnerId,
                                         barcode,
-                                        move_lines_picking: move_lines_picking.map(line => line.id),
+                                        move_lines_picking: move_lines_picking.map(
+                                            line => line.id
+                                        ),
                                     })
                                 );
-                            }
-                            else if (!isNaN(intInText) && intInText > 0 && intInText < 10000) {
+                            } else if (
+                                !isNaN(intInText) &&
+                                intInText > 0 &&
+                                intInText < 10000
+                            ) {
                                 this.wait_call(
-                                    this.odoo.call('set_quantity', {
+                                    this.odoo.call("set_quantity", {
                                         partner_id: this.partnerId,
                                         barcode,
-                                        move_lines_picking: move_lines_picking.map(line => line.id),
+                                        move_lines_picking: move_lines_picking.map(
+                                            line => line.id
+                                        ),
                                         qty: intInText,
                                     })
                                 );
-                            }
-                            else if (barcode === move_lines_picking[0].product.barcode) {
+                            } else if (
+                                barcode === move_lines_picking[0].product.barcode
+                            ) {
                                 this.wait_call(
-                                    this.odoo.call('scan_product', {
+                                    this.odoo.call("scan_product", {
                                         partner_id: this.partnerId,
                                         barcode,
                                     })
                                 );
-                            }
-                            else {
+                            } else {
                                 this.wait_call(
-                                    this.odoo.call('set_destination', {
+                                    this.odoo.call("set_destination", {
                                         partner_id: this.partnerId,
                                         barcode,
-                                        move_lines_picking: move_lines_picking.map(line => line.id),
+                                        move_lines_picking: move_lines_picking.map(
+                                            line => line.id
+                                        ),
                                         location_dest: barcode,
                                     })
                                 );
                             }
-                        }
-                        else {
+                        } else {
                             this.wait_call(
-                                this.odoo.call('scan_product', {
+                                this.odoo.call("scan_product", {
                                     partner_id: this.partnerId,
                                     barcode,
                                 })
                             );
                         }
                     },
-                }
+                },
             },
         };
     },

@@ -10,6 +10,7 @@ from odoo.addons.component.core import Component
 
 from .service import to_float
 
+
 class Checkout(Component):
     """
     Methods for the Checkout Process
@@ -39,7 +40,10 @@ class Checkout(Component):
     _description = __doc__
 
     def _response_for_select_line(self, picking, message=None, skip=None):
-        if all(line.shopfloor_checkout_done for line in picking.move_line_ids) and not picking.picking_type_id.shopfloor_scan_and_pack:
+        if (
+            all(line.shopfloor_checkout_done for line in picking.move_line_ids)
+            and not picking.picking_type_id.shopfloor_scan_and_pack
+        ):
             return self._response_for_summary(picking, message=message)
 
         next_state = "select_line"
@@ -193,7 +197,7 @@ class Checkout(Component):
                             },
                         )
 
-                    picking = pickings[skip:skip + 1]  # take the first one
+                    picking = pickings[skip : skip + 1]  # take the first one
 
         if not picking:
             package = search.package_from_scan(barcode)
@@ -262,7 +266,7 @@ class Checkout(Component):
         return picking.move_line_ids.filtered(self._filter_lines_checkout_done)
 
     def _lines_to_pack(self, picking):
-        #if we scan one by one we want all the lines
+        # if we scan one by one we want all the lines
         if picking.picking_type_id.shopfloor_scan_and_pack:
             return picking.move_line_ids
 
@@ -1021,27 +1025,23 @@ class Checkout(Component):
         it's target quantity
         """
         move_lines = picking.move_line_ids.filtered(
-            lambda l: l.product_id.barcode == barcode
-            and l.qty_done < l.product_uom_qty
+            lambda l: l.product_id.barcode == barcode and l.qty_done < l.product_uom_qty
         )
         if len(move_lines) > 0:
             move_line = move_lines[0]
         else:
             return self._response_for_scanned_product(
-                picking,
-                message=self.msg_store.barcode_not_found()
+                picking, message=self.msg_store.barcode_not_found()
             )
 
         self._change_line_qty(
             picking_id,
             [line.id for line in picking.move_line_ids],
             [move_line.id],
-            lambda __: move_line.qty_done + 1
+            lambda __: move_line.qty_done + 1,
         )
 
-        return self._response_for_scanned_product(
-            picking, message
-        )
+        return self._response_for_scanned_product(picking, message)
 
     def _response_for_scanned_product(self, picking, message=None):
         return self._response(
@@ -1391,9 +1391,7 @@ class ShopfloorCheckoutValidatorResponse(Component):
         )
 
     def scan_product(self):
-        return self._response_schema(
-            next_states={"scan_products"}
-        )
+        return self._response_schema(next_states={"scan_products"})
 
     def select_line(self):
         return self.scan_line()

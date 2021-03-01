@@ -114,7 +114,9 @@ class ClusterPicking(Component):
                 )
                 data["dest"] = "package_dest"
             else:
-                data["location_dest"] = self.data.location(last_picked_line.location_dest_id)
+                data["location_dest"] = self.data.location(
+                    last_picked_line.location_dest_id
+                )
                 data["dest"] = "location_dest"
 
         return self._response(next_state="scan_destination", data=data, message=message)
@@ -375,10 +377,12 @@ class ClusterPicking(Component):
         return fields.first(
             picking.move_line_ids.filtered(
                 lambda l: l.qty_done > 0
-                and (l.result_package_id
-                # if we are moving the entire package, we shouldn't
-                # add stuff inside it, it's not a new package
-                and l.package_id != l.result_package_id)
+                and (
+                    l.result_package_id
+                    # if we are moving the entire package, we shouldn't
+                    # add stuff inside it, it's not a new package
+                    and l.package_id != l.result_package_id
+                )
                 or (l.location_dest_id != picking.location_dest_id)
             ).sorted(key="write_date", reverse=True)
         )
@@ -620,7 +624,9 @@ class ClusterPicking(Component):
                     move_line, message=self.msg_store.dest_location_not_allowed()
                 )
 
-            move_line.write({"qty_done": quantity, "location_dest_id": location_dest.id})
+            move_line.write(
+                {"qty_done": quantity, "location_dest_id": location_dest.id}
+            )
             zero_check = move_line.picking_id.picking_type_id.shopfloor_zero_check
             if zero_check and move_line.location_id.planned_qty_in_location_is_empty():
                 return self._response_for_zero_check(batch, move_line)

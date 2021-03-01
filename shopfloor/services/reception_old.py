@@ -153,9 +153,7 @@ class ReceptionOld(Component):
                 return self._response_for_select_document(
                     message={
                         "message_type": "error",
-                        "body": _(
-                            "No picking and no product found"
-                        ),
+                        "body": _("No picking and no product found"),
                     }
                 )
             # search pickings which contains this product
@@ -163,11 +161,11 @@ class ReceptionOld(Component):
                 self._domain_for_list_stock_picking(),
                 order=self._order_for_list_stock_picking(),
             )
-            candidates = self.env['stock.picking']
+            candidates = self.env["stock.picking"]
             for picking in pickings:
                 # todo: create a helper to find a product in multiple pickings
                 move_lines = self._lines_to_receive(picking)
-                products = move_lines.mapped('product_id')
+                products = move_lines.mapped("product_id")
                 if product in products:
                     candidates |= picking
             if candidates:
@@ -178,9 +176,7 @@ class ReceptionOld(Component):
             return self._response_for_select_document(
                 message={
                     "message_type": "error",
-                    "body": _(
-                        "No picking found for given product"
-                    ),
+                    "body": _("No picking found for given product"),
                 }
             )
         # TODO: support  scan packaging
@@ -637,7 +633,10 @@ class ReceptionOld(Component):
 
     @staticmethod
     def _filter_lines_to_receive(move_line):
-        return move_line.product_uom_qty != move_line.qty_done and not move_line.shopfloor_checkout_done
+        return (
+            move_line.product_uom_qty != move_line.qty_done
+            and not move_line.shopfloor_checkout_done
+        )
 
     @staticmethod
     def _filter_lines_checkout_done(move_line):
@@ -1314,7 +1313,12 @@ class ShopfloorReceptionValidatorResponse(Component):
 
     def scan_document(self):
         return self._response_schema(
-            next_states={"manual_selection", "select_document", "select_line", "summary"}
+            next_states={
+                "manual_selection",
+                "select_document",
+                "select_line",
+                "summary",
+            }
         )
 
     def list_stock_picking(self):

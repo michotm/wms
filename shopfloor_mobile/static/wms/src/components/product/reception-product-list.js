@@ -5,7 +5,7 @@
  */
 
 Vue.component("reception-product-list", {
-    props: {"products": {default: []}, "fields": undefined},
+    props: {products: {default: []}, fields: undefined},
     template: `
         <div>
             <reception-product

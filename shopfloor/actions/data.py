@@ -6,7 +6,6 @@ from odoo import fields
 
 from odoo.addons.component.core import Component
 
-import pprint
 
 def model_data(obj):
     fields_dict = {}
@@ -219,7 +218,12 @@ class DataAction(Component):
             ("lot_id:lot", self._lot_parser),
             ("location_id:location_src", self._location_parser),
             ("location_dest_id:location_dest", self._location_parser),
-            ("result_package_id:package_dest", lambda rec, fname: self.package(rec.result_package_id, rec.picking_id, with_packaging=True)),
+            (
+                "result_package_id:package_dest",
+                lambda rec, fname: self.package(
+                    rec.result_package_id, rec.picking_id, with_packaging=True
+                ),
+            ),
             ("move_id:priority", lambda rec, fname: rec.move_id.priority or "",),
         ]
 
@@ -305,7 +309,14 @@ class DataAction(Component):
             pickings = record.picking_ids
 
             for i, picking in enumerate(pickings):
-                data["pickings"][i].update({"move_lines": [self.move_line(move_line) for move_line in picking.move_line_ids]})
+                data["pickings"][i].update(
+                    {
+                        "move_lines": [
+                            self.move_line(move_line)
+                            for move_line in picking.move_line_ids
+                        ]
+                    }
+                )
 
         return data
 

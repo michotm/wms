@@ -333,9 +333,9 @@ Vue.component("line-actions-popup", {
     computed: {
         actionsWithCondition: function() {
             return this.actions.filter(
-                action => action.condition === undefined || action.condition,
+                action => action.condition === undefined || action.condition
             );
-        }
+        },
     },
     template: `
   <div :class="$options._componentTag">
