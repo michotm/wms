@@ -43,8 +43,8 @@
         "product_packaging_type",
     ],
     "data": [
-        "data/ir_config_parameter_data.xml",
-        "data/ir_cron_data.xml",
+        # "data/ir_config_parameter_data.xml",
+        # "data/ir_cron_data.xml",
         "security/ir.model.access.csv",
         "views/res_partner.xml",
         "views/shopfloor_menu.xml",
