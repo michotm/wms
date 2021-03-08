@@ -1,6 +1,12 @@
 # Copyright 2020 Camptocamp SA (http://www.camptocamp.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-from odoo import models, fields, api
+import logging
+from datetime import datetime, timedelta
+
+from odoo import api, fields, models, tools
+
+_logger = logging.getLogger(__name__)
+
 
 # TODO: drop this model on next release.
 # The feature has been moved to `rest_log`.
