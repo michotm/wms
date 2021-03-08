@@ -5,7 +5,6 @@
  */
 
 export var SettingsControlPanel = Vue.component("settings-control-panel", {
-<<<<<<< HEAD
     data: function() {
         return {
             profile_name: this.$root.has_profile ? this.$root.profile.name : "?",
