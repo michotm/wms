@@ -78,8 +78,6 @@ class ReceptionOld(Component):
         )
 
     def _data_for_packing_info(self, picking):
-        if picking.picking_type_id.shopfloor_display_packing_info:
-            return picking.shopfloor_packing_info or ""
         return ""
 
     def _response_for_select_dest_package(self, picking, move_lines, message=None):
@@ -479,7 +477,9 @@ class ReceptionOld(Component):
                 new_line = self.env["stock.move.line"]
                 if qty_done > 0:
                     new_line, qty_check = move_line._split_qty_to_be_done(
-                        qty_done, split_partial=True, result_package_id=False,
+                        qty_done,
+                        split_partial=True,
+                        result_package_id=False,
                     )
                     if qty_check == "greater":
                         qty_done = move_line.product_uom_qty
