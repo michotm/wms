@@ -213,7 +213,6 @@ const TEMPLATES = {
 const ZonePicking = {
     mixins: [ScenarioBaseMixin],
     methods: {
-<<<<<<< HEAD
         /**
          * Override to inject headers for zone location and picking type when needed.
          */
