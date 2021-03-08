@@ -28,6 +28,7 @@ export var SettingsControlPanel = Vue.component("settings-control-panel", {
             );
             return language ? language.name : "?";
         },
+    },
     data: function () {
         return {};
     },
