@@ -171,7 +171,6 @@ Vue.component("picking-list-item-progress-bar", {
 `,
 });
 
-
 Vue.component("line-stock-out", {
     methods: {
         handle_action(action) {

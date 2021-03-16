@@ -139,7 +139,7 @@ class ShopfloorSchemaAction(Component):
             "move_line_count": {"required": True, "type": "integer"},
             "weight": {"required": True, "nullable": True, "type": "float"},
         }
-        if with_pickings == True:
+        if with_pickings is True:
             schema["pickings"] = self._schema_list_of(self.picking())
         if with_pickings == "full":
             schema["pickings"] = self._schema_list_of(

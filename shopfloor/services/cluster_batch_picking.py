@@ -5,7 +5,7 @@ from functools import reduce
 from odoo import _, fields
 from odoo.osv import expression
 
-from odoo.addons.base_rest.components.service import to_bool, to_int
+from odoo.addons.base_rest.components.service import to_int
 from odoo.addons.component.core import Component
 
 from .exception import (
@@ -18,7 +18,6 @@ from .exception import (
     UnableToPickMoreError,
     response_decorator,
 )
-from ..utils import to_float
 
 
 class ClusterBatchPicking(Component):
@@ -316,8 +315,11 @@ class ClusterBatchPicking(Component):
         quantity_to_set,
         message=None,
         next_state="scan_products",
-        data={},
+        data=None,
     ):
+        if data is None:
+            data = {}
+
         if product and move_line.product_id == product:
             if quantity_to_set > move_line.product_uom_qty:
                 raise TooMuchProductInCommandError(
@@ -921,15 +923,15 @@ class ShopfloorClusterPickingValidatorResponse(Component):
         return self._response_schema(next_states={"confirm_start"})
 
     def set_quantity(self):
-        return self._response_schema(next_states={"scan_products",})
+        return self._response_schema(next_states={"scan_products"})
 
     def set_destination(self):
         return self._response_schema(
-            next_states={"unload_all", "unload_single", "scan_products",}
+            next_states={"unload_all", "unload_single", "scan_products"}
         )
 
     def scan_product(self):
-        return self._response_schema(next_states={"scan_products",})
+        return self._response_schema(next_states={"scan_products"})
 
     def confirm_start(self):
         return self._response_schema(
