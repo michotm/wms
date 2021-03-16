@@ -16,7 +16,6 @@ from .exception import (
     TooMuchProductInCommandError,
     response_decorator,
 )
-from ..utils import to_float
 
 
 class Reception(Component):
@@ -115,26 +114,26 @@ class Reception(Component):
 
         return product_move_lines
 
-    def _search_picking_by_partner_id(self, id, state="assigned"):
+    def _search_picking_by_partner_id(self, partner_id, state="assigned"):
         return [
             ("state", "=", state),
             ("picking_type_id", "in", self.picking_types.ids),
-            ("partner_id", "=", id),
+            ("partner_id", "=", partner_id),
         ]
 
-    def _search_move_line_picked(self, id):
+    def _search_move_line_picked(self, partner_id):
         return [
             ("picking_id.state", "=", "assigned"),
             ("picking_id.picking_type_id", "in", self.picking_types.ids),
-            ("picking_id.partner_id", "=", id),
+            ("picking_id.partner_id", "=", partner_id),
             ("shopfloor_checkout_done", "=", True),
         ]
 
-    def _search_move_line_by_product(self, id, barcode):
+    def _search_move_line_by_product(self, partner_id, barcode):
         return [
             ("picking_id.state", "=", "assigned"),
             ("picking_id.picking_type_id", "in", self.picking_types.ids),
-            ("picking_id.partner_id", "=", id),
+            ("picking_id.partner_id", "=", partner_id),
             ("product_id.barcode", "=", barcode),
             ("shopfloor_checkout_done", "!=", True),
             ("state", "not in", ("cancel", "done")),
@@ -405,7 +404,7 @@ class Reception(Component):
         return self._response_for_scan_products(
             partner_id,
             [],
-            {"message_type": "success", "body": "Products put back in place",},
+            {"message_type": "success", "body": "Products put back in place"},
         )
 
     @response_decorator

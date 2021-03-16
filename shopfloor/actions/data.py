@@ -5,6 +5,7 @@ from odoo import fields
 from odoo.addons.component.core import Component
 from odoo.addons.shopfloor_base.utils import ensure_model
 
+
 class DataAction(Component):
     _inherit = "shopfloor.data.action"
 
@@ -251,7 +252,7 @@ class DataAction(Component):
     @ensure_model("stock.picking.batch")
     def picking_batch(self, record, with_pickings=False, **kw):
         parser = self._picking_batch_parser
-        if with_pickings == True:
+        if with_pickings is True:
             parser.append(("picking_ids:pickings", self._picking_parser))
         if with_pickings == "full":
             parser.append(("picking_ids:pickings", self._full_picking_parser))
