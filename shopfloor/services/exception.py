@@ -112,8 +112,6 @@ def response_decorator(called_func):
             message = getattr(instance.msg_store, e.message_name)(**(e.kw))
             return instance._response(next_state=e.state, data=e.data, message=message)
         except MessageBasedError as e:
-            return instance._response(
-                next_state=e.state, data=e.data, message=e.message
-            )
+            return instance._response(next_state=e.state, data=e.data, message=str(e))
 
     return decorated_response

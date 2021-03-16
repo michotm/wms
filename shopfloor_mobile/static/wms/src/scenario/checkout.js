@@ -319,7 +319,11 @@ const Checkout = {
                             intInText < 10000 &&
                             this.lastScanned
                         ) {
-                            const moveLinesSelected = this.state.data.picking.move_lines.filter(line => line.product.barcode === this.lastScanned && !line.done);
+                            const moveLinesSelected = this.state.data.picking.move_lines.filter(
+                                line =>
+                                    line.product.barcode === this.lastScanned &&
+                                    !line.done
+                            );
 
                             if (moveLinesSelected.length > 0) {
                                 this.wait_call(
@@ -334,11 +338,10 @@ const Checkout = {
                                 if (intInText === 0) {
                                     this.lastScanned = null;
                                 }
-                            }
-                            else {
+                            } else {
                                 this.set_message({
-                                    message_type: 'error',
-                                    body: 'An error as occured please scan a product',
+                                    message_type: "error",
+                                    body: "An error as occured please scan a product",
                                 });
                                 this.lastScanned = null;
                             }
@@ -349,10 +352,11 @@ const Checkout = {
                                     picking_id: this.state.data.picking.id,
                                 }),
                                 ({message}) => {
-                                    if (!message || message.message_type !== 'error') {
+                                    if (!message || message.message_type !== "error") {
                                         this.lastScanned = scanned.text;
                                     }
-                                });
+                                }
+                            );
                         }
                     },
                     shipFinished: () => {

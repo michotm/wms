@@ -1037,10 +1037,7 @@ class Checkout(Component):
         else:
             move_line.shopfloor_checkout_done = False
 
-
-        return self._response_for_scanned_product(
-            picking, message
-        )
+        return self._response_for_scanned_product(picking, message)
 
     def scan_product(self, picking_id, barcode):
         picking = self.env["stock.picking"].browse(picking_id)
@@ -1048,10 +1045,9 @@ class Checkout(Component):
         if message:
             return self._response_for_select_document(message=message)
 
-        """If there are more than one move_lines with the same product
-        just pick the first one that hasn't a quantity done equal to
-        it's target quantity
-        """
+        # If there are more than one move_lines with the same product
+        # just pick the first one that hasn't a quantity done equal to
+        # it's target quantity
         move_lines = picking.move_line_ids.filtered(
             lambda l: l.product_id.barcode == barcode and not l.shopfloor_checkout_done
         )
@@ -1060,8 +1056,7 @@ class Checkout(Component):
             move_line = move_lines[0]
         else:
             return self._response_for_scanned_product(
-                picking,
-                message=self.msg_store.barcode_not_found()
+                picking, message=self.msg_store.barcode_not_found()
             )
 
         quantity_to_set = move_line.qty_done + 1
@@ -1082,10 +1077,7 @@ class Checkout(Component):
         else:
             move_line.shopfloor_checkout_done = False
 
-
-        return self._response_for_scanned_product(
-            picking, message
-        )
+        return self._response_for_scanned_product(picking, message)
 
     def _response_for_scanned_product(self, picking, message=None):
         return self._response(
