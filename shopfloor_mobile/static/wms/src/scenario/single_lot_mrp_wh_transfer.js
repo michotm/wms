@@ -9,7 +9,7 @@
 import {ScenarioBaseMixin} from "./mixins.js";
 import {process_registry} from "../services/process_registry.js";
 
-export var SingleLotMrpStatesMixin = {
+export var SingleLotMrpWhStatesMixin = {
     data: function() {
         return {
             states: {
@@ -38,8 +38,9 @@ export var SingleLotMrpStatesMixin = {
                     on_scan: (scanned, confirmation = false) => {
                         this.state_set_data({location_barcode: scanned.text});
                         this.wait_call(
-                            this.odoo.call("validate", {
-                                production_id: this.state.data.id,
+                            this.odoo.call("validate_transfer", {
+                                move_line_id: this.state.data.id,
+                                production_id: this.state.data.production_id,
                                 location_barcode: scanned.text,
                                 confirmation: confirmation,
                             })
@@ -48,7 +49,7 @@ export var SingleLotMrpStatesMixin = {
                     on_cancel: () => {
                         this.wait_call(
                             this.odoo.call("cancel", {
-                                production_id: this.state.data.id,
+                                move_line_id: this.state.data.id,
                             })
                         );
                     },
@@ -58,8 +59,8 @@ export var SingleLotMrpStatesMixin = {
     },
 };
 
-const SingleLotMrpTransfer = {
-    mixins: [ScenarioBaseMixin, SingleLotMrpStatesMixin],
+const SingleLotMrpWhTransfer = {
+    mixins: [ScenarioBaseMixin, SingleLotMrpWhStatesMixin],
     template: `
         <Screen :screen_info="screen_info">
             <template v-slot:header>
@@ -87,7 +88,7 @@ const SingleLotMrpTransfer = {
     `,
     data: function() {
         return {
-            usage: "single_lot_mrp_transfer",
+            usage: "single_lot_mrp_wh_transfer",
             show_reset_button: true,
             initial_state_key: "start",
             states: {
@@ -101,6 +102,6 @@ const SingleLotMrpTransfer = {
         };
     },
 };
-process_registry.add("single_lot_mrp_transfer", SingleLotMrpTransfer);
+process_registry.add("single_lot_mrp_wh_transfer", SingleLotMrpWhTransfer);
 
-export default SingleLotMrpTransfer;
+export default SingleLotMrpWhTransfer;

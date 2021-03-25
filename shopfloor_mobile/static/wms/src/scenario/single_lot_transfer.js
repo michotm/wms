@@ -16,8 +16,8 @@ export var SingleLotStatesMixin = {
                 // Generic state for when to start w/ scanning a lot or loc
                 start: {
                     display_info: {
-                        title: "Start by scanning a lot or a location",
-                        scan_placeholder: "Scan lot",
+                        title: "Commencer par scanner un lot ou un emplacement",
+                        scan_placeholder: "Scanner lot",
                     },
                     on_scan: scanned => {
                         const data = this.state.data;
@@ -31,8 +31,8 @@ export var SingleLotStatesMixin = {
                 },
                 scan_location: {
                     display_info: {
-                        title: "Set a location",
-                        scan_placeholder: "Scan location",
+                        title: "Définir l'emplacement",
+                        scan_placeholder: "Scanner emplacement",
                         show_cancel_button: true,
                     },
                     on_scan: (scanned, confirmation = false) => {
