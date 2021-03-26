@@ -54,11 +54,10 @@ Vue.component("searchbar", {
         refocus: function() {
             if (this.refocusInput) {
                 setTimeout(() => this.$refs.input.focus());
-            }  
+            }
         },
         on_screen_reload: function(evt) {
-            if (this.reload_steal_focus)
-                this.$refs.input.focus();
+            if (this.reload_steal_focus) this.$refs.input.focus();
         },
     },
 
