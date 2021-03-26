@@ -18,6 +18,11 @@ Vue.component("searchbar", {
             type: Boolean,
             default: true,
         },
+        // Allow searchbar to steal focus on screen reload
+        reload_steal_focus: {
+            type: Boolean,
+            default: true,
+        },
         autocomplete: {
             type: String,
             default: "off",
@@ -29,6 +34,9 @@ Vue.component("searchbar", {
             default: true,
         },
         refocusInput: Boolean,
+    },
+    mounted: function() {
+        this.$root.event_hub.$on("screen:reload", this.on_screen_reload);
     },
     methods: {
         search: function(e) {
@@ -47,6 +55,9 @@ Vue.component("searchbar", {
             if (this.refocusInput) {
                 setTimeout(() => this.$refs.input.focus());
             }
+        on_screen_reload: function(evt) {
+            if (this.reload_steal_focus)
+                this.$refs.input.focus();
         },
     },
 
@@ -59,6 +70,7 @@ Vue.component("searchbar", {
       >
     <v-text-field
       ref="input"
+      name="searchbar"
       required v-model="entered"
       :placeholder="input_placeholder"
       :autofocus="autofocus ? 'autofocus' : null"
