@@ -113,6 +113,11 @@
                 type="module"
             />
             <script
+                id="script_scenario_input_stock_transfer"
+                t-attf-src="/shopfloor_mobile/static/wms/src/scenario/input_stock_transfer.js?v=#{mod_version}"
+                type="module"
+            />
+            <script
                 id="script_scenario_location_content_transfer"
                 t-attf-src="/shopfloor_mobile/static/wms/src/scenario/location_content_transfer.js?v=#{mod_version}"
                 type="module"
