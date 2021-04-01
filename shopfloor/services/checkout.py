@@ -201,18 +201,32 @@ class Checkout(Component):
 
                 pickings = lines.mapped("picking_id")
 
-                if len(pickings) > 0:
-                    if skip >= len(pickings):
-                        picking = pickings[-1]
-                        return self._response_for_select_line(
-                            picking,
+                if picking.picking_type_id.shopfloor_scan_and_pack:
+                    if len(pickings) > 0:
+                        if skip >= len(pickings):
+                            picking = pickings[-1]
+                            return self._response_for_select_line(
+                                picking,
+                                message={
+                                    "message_type": "error",
+                                    "body": _("There's no more order to skip"),
+                                },
+                            )
+
+                        picking = pickings[skip : skip + 1]  # take the first one
+                else:
+                    if len(pickings) == 1:
+                        picking = pickings
+                    else:
+                        return self._response_for_select_document(
                             message={
                                 "message_type": "error",
-                                "body": _("There's no more order to skip"),
-                            },
+                                "body": _(
+                                    "Several transfers found, please scan a package"
+                                    " or select a transfer manually."
+                                ),
+                            }
                         )
-
-                    picking = pickings[skip : skip + 1]  # take the first one
 
         if not picking:
             package = search.package_from_scan(barcode)

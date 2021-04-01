@@ -13,7 +13,7 @@ class CheckoutScanCase(CheckoutCommonCase):
         self.assert_response(
             response,
             next_state="select_line",
-            data={"picking": self._stock_picking_data(picking)},
+            data={"picking": self._stock_picking_data(picking), "skip": 0},
         )
 
     def test_scan_document_stock_picking_ok(self):
