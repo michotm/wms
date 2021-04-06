@@ -4,7 +4,7 @@ from odoo import _, fields
 
 from odoo.addons.component.core import Component
 
-class InputStockTransfer(Component):
+class StockBatchTransfer(Component):
     """
     Methods for Input Stock Transfer Process
 
@@ -19,23 +19,47 @@ class InputStockTransfer(Component):
     """
 
     _inherit = "base.shopfloor.process"
-    _name = "shopfloor.input.stock.transfer"
-    _usage = "input_stock_transfer"
+    _name = "shopfloor.stock.batch.transfer"
+    _usage = "stock_batch_transfer"
     _description = __doc__
 
+    def _location_search_domain(self):
+        return [
+            ('shopfloor_is_input_location', '=', True)
+        ]
+
     def list_input_location(self):
-        #self.env["stock.picking.location"].browse(
-        pass
+        domain = self._location_search_domain()
+        records = self.env["stock.location"].search(domain)
+        data = self.data_detail.locations_detail(records)
+        return self._response(
+            next_state="start",
+            data={
+                "input_locations": data,
+            }
+        )
 
     def scan_location(self, barcode):
+        search = self._actions_for("search")
+        location = search.location_from_scan(barcode)
+
+        move_lines = location.mapped("reserved_move_line_ids")
+
+        return self._response(
+            next_state="scan_products",
+            data={
+                "move_lines": self.data.move_lines(move_lines, with_picking=True),
+                "id": location.id,
+            }
+        )
         pass
 
-class ShopfloorInputStockTransferValidator(Component):
+class ShopfloorStockBatchTransferValidator(Component):
     """Validators for the Delivery endpoints"""
 
     _inherit = "base.shopfloor.validator"
-    _name = "shopfloor.input.stock.transfer.validator"
-    _usage = "input_stock_transfer.validator"
+    _name = "shopfloor.stock.batch.transfer.validator"
+    _usage = "stock_batch_transfer.validator"
 
     def list_input_location(self):
         return {}
@@ -44,12 +68,12 @@ class ShopfloorInputStockTransferValidator(Component):
         return {"barcode": {"required": True, "type": "string"}}
 
 
-class ShopfloorInputStockTransferValidatorResponse(Component):
+class ShopfloorStockBatchTransferValidatorResponse(Component):
     """Validators for the Delivery endpoints responses"""
 
     _inherit = "base.shopfloor.validator.response"
-    _name = "shopfloor.input.stock.transfer.validator.response"
-    _usage = "input_stock_transfer.validator.response"
+    _name = "shopfloor.stock.batch.transfer.validator.response"
+    _usage = "stock_batch_transfer.validator.response"
 
     _start_state = "start"
 
@@ -68,7 +92,7 @@ class ShopfloorInputStockTransferValidatorResponse(Component):
     def _schema_input_locations(self):
         return {
             "input_locations": self.schemas._schema_list_of(
-                self.schemas.location()
+                self.schemas_detail.location_detail()
             ),
         }
 

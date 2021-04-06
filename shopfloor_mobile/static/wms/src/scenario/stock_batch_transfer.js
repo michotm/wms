@@ -7,18 +7,8 @@
 import {ScenarioBaseMixin} from "/shopfloor_mobile_base/static/wms/src/scenario/mixins.js";
 import {process_registry} from "/shopfloor_mobile_base/static/wms/src/services/process_registry.js";
 
-const InputStockTransfer = {
+const StockBatchTransfer = {
     mixins: [ScenarioBaseMixin],
-    /*
-        /!\ IMPORTANT: we use many times the same component
-        (eg: manual-select or detail-picking-select)
-        and to make sure they don't get cached together
-        we MUST call them using `:key` to make them unique!
-        If you don't, you'll have severe problems of data being shared
-        between each instances. This is the real problem:
-        you assume to have different instance but indeed you get only 1
-        which is reused every time!
-    */
     template: `
         <Screen :screen_info="screen_info">
             <template v-slot:header>
@@ -28,6 +18,16 @@ const InputStockTransfer = {
                 v-if="state.on_scan"
                 v-on:found="on_scan"
                 :input_placeholder="search_input_placeholder"
+                />
+                <detail-simple-location
+                    v-if="state_is('start')"
+                    v-for="location in state.data.input_locations"
+                    :key="location.id"
+                    :record="location"
+                    />
+                <stock-batch-scan-products
+                    v-if="state_is('scan_products')"
+                    data="state.data.scan_products"
                 />
         </Screen>
         `,
@@ -40,7 +40,7 @@ const InputStockTransfer = {
     },
     data: function() {
         return {
-            usage: "input_stock_transfer",
+            usage: "stock_batch_transfer",
             initial_state_key: "start",
             states: {
                 start: {
@@ -57,11 +57,22 @@ const InputStockTransfer = {
                         this.wait_call(this.odoo.call("list_input_location"));
                     },
                 },
+                scan_products: {
+                    display_info: {
+                        title: "Go to the first location",
+                        scan_placeholder: "Scan a destination location",
+                    },
+                    on_scan: ({text}) => {
+                        this.wait_call(
+                            this.odoo.call("scan_location", {barcode: text})
+                        );
+                    },
+                },
             },
         };
     },
 };
 
-process_registry.add("input_stock_transfer", InputStockTransfer);
+process_registry.add("stock_batch_transfer", StockBatchTransfer);
 
-export default InputStockTransfer;
+export default StockBatchTransfer;
