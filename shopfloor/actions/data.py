@@ -15,8 +15,8 @@ class DataAction(Component):
             record.with_context(location=record.id), self._location_parser, **kw
         )
 
-    def locations(self, record, **kw):
-        return self.location(record, multi=True)
+    def locations(self, records, **kw):
+        return [self.location(rec, **kw) for rec in records]
 
     @property
     def _location_parser(self):
