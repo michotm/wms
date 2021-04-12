@@ -21,6 +21,13 @@ from .exception import (
 
 
 class ClusterBatchPicking(Component):
+    """
+    Cluster Batch Picking Process
+    The goal of this scenario is to do the pickings for
+    several customers at once. Orders can be mixed together in
+    this scenario (difference with Cluster Picking).
+    """
+
     _inherit = "base.shopfloor.process"
     _name = "shopfloor.cluster.batch_picking"
     _usage = "cluster_batch_picking"
