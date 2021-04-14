@@ -129,6 +129,20 @@ class CheckoutScanCase(CheckoutCommonCase):
             },
         )
 
+        # if mode scan and pack is active,
+        # we can paginate when scan_document
+        # returns multiple documents
+        picking.picking_type_id.sudo().shopfloor_scan_and_pack = True
+        response = self.service.dispatch(
+            "scan_document",
+            params={"barcode": picking.move_line_ids.location_id.barcode, "skip": 1},
+        )
+        self.assert_response(
+            response,
+            next_state="scan_products",
+            data={"picking": self._stock_picking_data(pickings[1]), "skip": 1},
+        )
+
     def test_scan_document_recover(self):
         """If the user starts to process a line, and for whatever reason he
         stops there and restarts the scenario from the beginning, he should

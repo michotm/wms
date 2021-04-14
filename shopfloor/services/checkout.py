@@ -200,20 +200,17 @@ class Checkout(Component):
                 )
 
                 pickings = lines.mapped("picking_id")
-
-                if picking.picking_type_id.shopfloor_scan_and_pack:
-                    if len(pickings) > 0:
-                        if skip >= len(pickings):
-                            picking = pickings[-1]
-                            return self._response_for_select_line(
-                                picking,
-                                message={
-                                    "message_type": "error",
-                                    "body": _("There's no more order to skip"),
-                                },
-                            )
-
-                        picking = pickings[skip : skip + 1]  # take the first one
+                if pickings[0].picking_type_id.shopfloor_scan_and_pack:
+                    if skip >= len(pickings):
+                        picking = pickings[-1]
+                        return self._response_for_select_line(
+                            picking,
+                            message={
+                                "message_type": "error",
+                                "body": _("There's no more order to skip"),
+                            },
+                        )
+                    picking = pickings[skip : skip + 1]  # take the first one
                 else:
                     if len(pickings) == 1:
                         picking = pickings
