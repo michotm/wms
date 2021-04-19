@@ -955,7 +955,9 @@ class Checkout(Component):
         package = self.env["stock.quant.package"].browse(package_id).exists()
         if not package:
             return self._response_for_select_dest_package(
-                picking, lines, message=self.msg_store.record_not_found(),
+                picking,
+                lines,
+                message=self.msg_store.record_not_found(),
             )
         return self._set_dest_package_from_selection(picking, lines, package)
 

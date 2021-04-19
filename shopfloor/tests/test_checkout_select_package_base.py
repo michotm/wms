@@ -27,7 +27,12 @@ class CheckoutSelectPackageMixin:
         )
 
     def _assert_selected_qties(
-        self, response, selected_lines, lines_quantities, message=None, packing_info="",
+        self,
+        response,
+        selected_lines,
+        lines_quantities,
+        message=None,
+        packing_info="",
     ):
         picking = selected_lines.mapped("picking_id")
         deselected_lines = picking.move_line_ids - selected_lines
