@@ -1,1 +1,4 @@
 freezegun
+
+odoo14-addon-shopfloor @ git+https://github.com/akretion/wms.git@14.0-mig-shopfloor-april-21-ak-phs#subdirectory=setup/shopfloor
+odoo14-addon-shopfloor_mobile @ git+https://github.com/akretion/wms.git@14.0-mig-shopfloor_mobile-april-21-ak-phs#subdirectory=setup/shopfloor_mobile
