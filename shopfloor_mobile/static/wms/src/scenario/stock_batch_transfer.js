@@ -25,10 +25,16 @@ const StockBatchTransfer = {
                     :key="location.id"
                     :record="location"
                     />
-                <stock-batch-scan-products
+                <batch-move-line
                     v-if="state_is('scan_products')"
-                    data="state.data.scan_products"
-                />
+                    :moveLines="data.move_lines"
+                    :fields="state.fields"
+                    :lastScanned="lastScanned"
+                    :selectedLocation="selectedLocation"
+                    :currentLocation="currentLocation"
+                    :lastPickedLine="lastPickedLine"
+                    @action="state.actionStockOut"
+                    />
         </Screen>
         `,
     computed: {
@@ -67,6 +73,13 @@ const StockBatchTransfer = {
                             this.odoo.call("scan_location", {barcode: text})
                         );
                     },
+                    fields: [
+                        {path: "supplierCode", label: "Vendor code", klass: "loud"},
+                        {path: "qty", label: "Quantity"},
+                        {path: "qtyDone", label: "Done"},
+                        {path: "picking_dest.name", label: "Picking destination"},
+                        {path: "dest.name", label: "Should be put in"},
+                    ],
                 },
             },
         };
