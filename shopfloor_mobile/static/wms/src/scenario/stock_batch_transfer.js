@@ -25,7 +25,7 @@ const StockBatchTransfer = {
                     :key="location.id"
                     :record="location"
                     />
-                <batch-move-line
+                <batch-product-by-dest
                     v-if="state_is('scan_products')"
                     :moveLines="state.data.move_lines"
                     :fields="state.fields"
