@@ -27,13 +27,12 @@ const StockBatchTransfer = {
                     />
                 <batch-move-line
                     v-if="state_is('scan_products')"
-                    :moveLines="data.move_lines"
+                    :moveLines="state.data.move_lines"
                     :fields="state.fields"
                     :lastScanned="lastScanned"
                     :selectedLocation="selectedLocation"
                     :currentLocation="currentLocation"
                     :lastPickedLine="lastPickedLine"
-                    @action="state.actionStockOut"
                     />
         </Screen>
         `,
@@ -48,6 +47,10 @@ const StockBatchTransfer = {
         return {
             usage: "stock_batch_transfer",
             initial_state_key: "start",
+            lastScanned: null,
+            selectedLocation: null,
+            currentLocation: null,
+            lastPickedLine: null,
             states: {
                 start: {
                     display_info: {

@@ -44,16 +44,14 @@ class StockBatchTransfer(Component):
         location = search.location_from_scan(barcode)
 
         move_lines_children = location.mapped("reserved_move_line_ids")
-        move_lines_self = location.mapped("source_move_line_ids")
 
         return self._response(
             next_state="scan_products",
             data={
-                "move_lines": self.data.move_lines(move_lines_children + move_lines_self, with_picking=True),
+                "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
                 "id": location.id,
             }
         )
-        pass
 
 class ShopfloorStockBatchTransferValidator(Component):
     """Validators for the Delivery endpoints"""
