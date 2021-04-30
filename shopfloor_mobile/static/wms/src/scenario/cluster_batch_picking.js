@@ -444,6 +444,12 @@ const ClusterBatchPicking = {
                         {path: "picking_dest.name", label: "Picking destination"},
                         {path: "dest.name", label: "Should be put in"},
                     ],
+                    exit: () => {
+                        this.lastScanned = null;
+                        this.lastPickedLine = null;
+                        this.currentLocation = null;
+                        this.selectedLocation = null;
+                    }
                 },
                 unload_all: {
                     display_info: {
