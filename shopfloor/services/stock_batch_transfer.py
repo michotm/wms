@@ -28,6 +28,13 @@ class StockBatchTransfer(Component):
             ('shopfloor_is_input_location', '=', True)
         ]
 
+    def _move_lines_search_domain(self, location_id):
+        return [
+            ("picking_id.picking_type_id", "in", self.picking_types.ids),
+            ("picking_id.state", "=", "assigned"),
+            ("location_id.id", "=", location_id),
+        ]
+
     def list_input_location(self):
         domain = self._location_search_domain()
         records = self.env["stock.location"].search(domain)
@@ -43,7 +50,7 @@ class StockBatchTransfer(Component):
         search = self._actions_for("search")
         location = search.location_from_scan(barcode)
 
-        move_lines_children = location.mapped("reserved_move_line_ids")
+        move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(location.id))
 
         return self._response(
             next_state="scan_products",
@@ -52,6 +59,10 @@ class StockBatchTransfer(Component):
                 "id": location.id,
             }
         )
+
+    def scan_products(self, barcode, move_line_ids):
+        pass
+
 
 class ShopfloorStockBatchTransferValidator(Component):
     """Validators for the Delivery endpoints"""
