@@ -42,13 +42,13 @@ class ShopfloorMenu(Component):
         if name_fragment:
             domain.append(("name", "ilike", name_fragment))
         records = self.env[self._expose_model].search(domain)
-        current_wh = self.work.profile.warehouse_id
-        records = records.filtered(
-            lambda menu: all(
-                not pt.warehouse_id or pt.warehouse_id == current_wh
-                for pt in menu.picking_type_ids
-            )
-        )
+        #        current_wh = self.work.profile.warehouse_id
+        #        records = records.filtered(
+        #            lambda menu: all(
+        #                not pt.warehouse_id or pt.warehouse_id == current_wh
+        #                for pt in menu.picking_type_ids
+        #            )
+        #        )
         return records
 
     def search(self, name_fragment=None):

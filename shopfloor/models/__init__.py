@@ -1,3 +1,4 @@
+from . import auth_api_key
 from . import priority_postpone_mixin
 from . import res_partner
 from . import shopfloor_menu
