@@ -208,14 +208,6 @@ Vue.component("nav-items", {
                 </v-list-item-title>
                 <v-list-item-subtitle v-if="show_full_info">
                     <small class="font-weight-light"><strong>{{ $t('app.nav.scenario') }}</strong> {{ item.scenario }}</small>
-                    <br />
-                    <small class="font-weight-light text-wrap pr-2">
-                        <strong>{{ $t('app.nav.op_types') }}</strong>
-                        <span v-for="(pt, index) in item.picking_types"
-                              :key="'pt-' + item.id + '-' + pt.id"
-                              >{{ pt.name }}<span v-if="index != (item.picking_types.length - 1)">,</span>
-                        </span>
-                    </small>
                 </v-list-item-subtitle>
             </v-list-item-content>
             <v-list-item-action v-if="item.lines_count">
