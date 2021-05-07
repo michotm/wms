@@ -20,6 +20,7 @@ const StockBatchTransfer = {
                 :input_placeholder="search_input_placeholder"
                 />
                 <detail-simple-location
+                    @click="state.on_scan(location.barcode)"
                     v-if="state_is('start')"
                     v-for="location in state.data.input_locations"
                     :key="location.id"
