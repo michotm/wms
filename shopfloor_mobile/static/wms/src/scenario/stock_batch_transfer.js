@@ -20,7 +20,7 @@ const StockBatchTransfer = {
                 :input_placeholder="search_input_placeholder"
                 />
                 <detail-simple-location
-                    @click="state.on_scan(location.barcode)"
+                    @click="state.on_scan({text: location.barcode})"
                     v-if="state_is('start')"
                     v-for="location in state.data.input_locations"
                     :key="location.id"
@@ -31,13 +31,19 @@ const StockBatchTransfer = {
                     :moveLines="state.data.move_lines"
                     :fields="state.fields"
                     :lastScanned="lastScanned"
-                    :selectedLocation="selectedLocation"
-                    :currentLocation="currentLocation"
+                    :selectedLocation="state.data.selected_location"
+                    :currentLocation="state.data.selected_location"
                     :lastPickedLine="lastPickedLine"
                     />
         </Screen>
         `,
     computed: {
+        currentDestLocation: function() {
+            return this.state.data.selected_location;
+        },
+        currentSourceLocation: function() {
+            return this.state.data.id;
+        },
     },
     methods: {
         screen_title: function() {
@@ -49,8 +55,6 @@ const StockBatchTransfer = {
             usage: "stock_batch_transfer",
             initial_state_key: "start",
             lastScanned: null,
-            selectedLocation: null,
-            currentLocation: null,
             lastPickedLine: null,
             states: {
                 start: {
@@ -60,7 +64,7 @@ const StockBatchTransfer = {
                     },
                     on_scan: ({text}) => {
                         this.wait_call(
-                            this.odoo.call("scan_location", {barcode: text})
+                            this.odoo.call("scan_location", {barcode: text}),
                         );
                     },
                     enter: () => {
@@ -73,9 +77,28 @@ const StockBatchTransfer = {
                         scan_placeholder: "Scan a destination location",
                     },
                     on_scan: ({text}) => {
-                        this.wait_call(
-                            this.odoo.call("scan_location", {barcode: text})
-                        );
+                        if (this.currentDestLocation) {
+                            this.wait_call(
+                                this.odoo.call(
+                                    "drop_product_to_location",
+                                    {
+                                        barcode: text,
+                                        current_source_location_id: this.currentSourceLocation,
+                                        dest_location_id: this.currentDestLocation,
+                                    }
+                                )
+                            );
+                        }
+                        else {
+                            this.wait_call(
+                                this.odoo.call("set_current_location",
+                                    {
+                                        barcode: text,
+                                        current_source_location_id: this.currentSourceLocation
+                                    }
+                                ),
+                            );
+                        }
                     },
                     fields: [
                         {path: "supplierCode", label: "Vendor code", klass: "loud"},

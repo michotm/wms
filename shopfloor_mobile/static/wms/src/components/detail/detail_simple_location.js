@@ -9,7 +9,7 @@ import {ItemDetailMixin} from "/shopfloor_mobile_base/static/wms/src/components/
 Vue.component("detail-simple-location", {
     mixins: [ItemDetailMixin],
     template: `
-  <div :class="$options._componentTag">
+  <div :class="$options._componentTag" v-on="$listeners">
     <item-detail-card
       v-bind="$props"
       :options="{main: true}"

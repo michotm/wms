@@ -2,7 +2,15 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 from odoo import _, fields
 
+from odoo.addons.base_rest.components.service import to_int
 from odoo.addons.component.core import Component
+
+from .exception import (
+    LocationNotFound,
+    BarcodeNotFoundError,
+    DestLocationNotAllowed,
+    response_decorator,
+)
 
 class StockBatchTransfer(Component):
     """
@@ -35,6 +43,14 @@ class StockBatchTransfer(Component):
             ("location_id.id", "=", location_id),
         ]
 
+    def _move_lines_product_search_domain(self, location_id, product_barcode):
+        return [
+            ("picking_id.picking_type_id", "in", self.picking_types.ids),
+            ("picking_id.state", "=", "assigned"),
+            ("location_id.id", "=", location_id),
+            ("product_id.barcode", "=", product_barcode),
+        ]
+
     def list_input_location(self):
         domain = self._location_search_domain()
         records = self.env["stock.location"].search(domain)
@@ -57,11 +73,92 @@ class StockBatchTransfer(Component):
             data={
                 "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
                 "id": location.id,
+            },
+            message={
+                "message_type": "success",
+                "body": _("{} location selected".format(location.display_name))
             }
         )
 
-    def scan_products(self, barcode, move_line_ids):
-        pass
+    @response_decorator
+    def set_current_location(self, barcode, current_source_location_id):
+        search = self._actions_for("search")
+        location = search.location_from_scan(barcode)
+        current_source_location = self.env["stock.location"].browse(current_source_location_id)
+
+        move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(current_source_location.id))
+
+        #We check if the current location is a destination location of at least one of the move
+        #of the current_source_location
+        valid_location = False
+        for line in move_lines_children:
+            if line.location_dest_id.id == location.id:
+                valid_location = True
+                break
+
+        #If it's not we tell the user that he can't chose this destination
+        if not valid_location:
+            raise DestLocationNotAllowed(
+                state="scan_products",
+                data={
+                    "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
+                    "id": current_source_location.id,
+                }
+            )
+
+        return self._response(
+            next_state="scan_products",
+            data={
+                "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
+                "id": current_source_location.id,
+                "selected_location": location.id,
+            },
+        )
+
+    @response_decorator
+    def drop_product_to_location(self, barcode, current_source_location_id, dest_location_id):
+        dest_location = self.env["stock.location"].browse(dest_location_id)
+        current_source_location = self.env["stock.location"].browse(current_source_location_id)
+        move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(current_source_location.id))
+        product_move_lines = self.env["stock.move.line"].search(
+            self._move_lines_product_search_domain(
+                current_source_location.id,
+                barcode,
+            )
+        )
+
+        if not dest_location or not current_source_location:
+            raise LocationNotFound(
+                state="scan_products",
+                data={
+                    "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
+                    "id": current_source_location.id,
+                    "selected_location": dest_location_id,
+                }
+            )
+
+        if len(product_move_lines) is 0:
+            raise BarcodeNotFoundError(
+                state="scan_products",
+                data={
+                    "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
+                    "id": current_source_location.id,
+                    "selected_location": dest_location_id,
+                }
+            )
+
+        product_move_lines[0].qty_done += 1
+
+        return self._response(
+            next_state="scan_products",
+            data={
+                "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
+                "id": current_source_location.id,
+                "selected_location": dest_location_id,
+                "selected_product": barcode,
+            },
+        )
+
 
 
 class ShopfloorStockBatchTransferValidator(Component):
@@ -76,6 +173,19 @@ class ShopfloorStockBatchTransferValidator(Component):
 
     def scan_location(self):
         return {"barcode": {"required": True, "type": "string"}}
+
+    def set_current_location(self):
+        return {
+            "barcode": {"required": True, "type": "string"},
+            "current_source_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+        }
+
+    def drop_product_to_location(self):
+        return {
+            "barcode": {"required": True, "type": "string"},
+            "current_source_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "dest_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+        }
 
 
 class ShopfloorStockBatchTransferValidatorResponse(Component):
@@ -113,6 +223,8 @@ class ShopfloorStockBatchTransferValidatorResponse(Component):
                 self.schemas.move_line(with_packaging=True, with_picking=True)
             ),
             "id": {"required": True, "type": "integer"},
+            "selected_location": {"required": False, "type": "integer"},
+            "selected_product": {"required": False, "type": "string"},
         }
 
     def list_input_location(self):
@@ -125,3 +237,12 @@ class ShopfloorStockBatchTransferValidatorResponse(Component):
             next_states={"start", "scan_products"}
         )
 
+    def set_current_location(self):
+        return self._response_schema(
+            next_states={"scan_products"}
+        )
+
+    def drop_product_to_location(self):
+        return self._response_schema(
+            next_states={"scan_products"}
+        )

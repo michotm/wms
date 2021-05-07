@@ -78,6 +78,7 @@ color_registry.add_theme(
          * details
          */
         detail_main_card: "info lighten-4",
+        detail_main_card_selected: "rgba(3, 215, 252, 1)",
     },
     "light"
 ); // TODO: we should bave a theme named "coosa" and select it
