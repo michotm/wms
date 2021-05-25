@@ -41,11 +41,14 @@ Vue.component("batch-product-by-dest", {
                 )
                 .sort((a, b) => (a.done ? 1 : -1));
 
-            const linesByProduct = Object.values(lines.reduce((acc, line) => {
-                (acc[line.productId] = acc[line.productId] || []).push(line);
-                return acc;
-            }, {})).map(prodLines => {
-                return prodLines.reduce((acc, lineProd) => ({
+            const linesByProduct = Object.values(
+                lines.reduce((acc, line) => {
+                    (acc[line.productId] = acc[line.productId] || []).push(line);
+                    return acc;
+                }, {})
+            ).map(prodLines => {
+                return prodLines.reduce(
+                    (acc, lineProd) => ({
                         name: lineProd.name,
                         qty: acc.qty + lineProd.qty,
                         qtyDone: acc.qtyDone + lineProd.qtyDone,
@@ -55,12 +58,14 @@ Vue.component("batch-product-by-dest", {
                         id: [lineProd.id, ...acc.id],
                         dest: lineProd.dest,
                         productId: lineProd.productId,
-                    }), {
+                    }),
+                    {
                         qty: 0,
                         qtyDone: 0,
                         done: true,
                         id: [],
-                    })
+                    }
+                );
             });
 
             const selected = linesByProduct.find(this.isLastScanned) || {};
@@ -129,4 +134,3 @@ Vue.component("batch-product-by-dest", {
         </v-container>
     `,
 });
-

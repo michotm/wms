@@ -10,4 +10,4 @@ Vue.component("stock-batch-scan-products", {
         @action="state.actionStockOut"
         />
     `,
-})
+});

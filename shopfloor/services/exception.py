@@ -115,4 +115,3 @@ def response_decorator(called_func):
             return instance._response(next_state=e.state, data=e.data, message=str(e))
 
     return decorated_response
-

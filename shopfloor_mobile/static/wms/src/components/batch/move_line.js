@@ -20,7 +20,10 @@ Vue.component("batch-move-line", {
         getLineDest(line) {
             if (line.suggested_package_dest && line.suggested_package_dest.length > 0) {
                 return line.suggested_package_dest[0];
-            } else if (line.suggested_package_dest && line.suggested_location_dest.length > 0) {
+            } else if (
+                line.suggested_package_dest &&
+                line.suggested_location_dest.length > 0
+            ) {
                 return line.suggested_location_dest[0];
             }
         },
@@ -114,4 +117,3 @@ Vue.component("batch-move-line", {
         </v-container>
     `,
 });
-

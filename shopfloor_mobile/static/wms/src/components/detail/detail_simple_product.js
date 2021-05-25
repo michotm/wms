@@ -36,4 +36,3 @@ Vue.component("detail-simple-product", {
     </item-detail-card>
     `,
 });
-

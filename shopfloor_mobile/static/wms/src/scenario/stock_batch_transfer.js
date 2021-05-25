@@ -67,7 +67,7 @@ const StockBatchTransfer = {
                     },
                     on_scan: ({text}) => {
                         this.wait_call(
-                            this.odoo.call("scan_location", {barcode: text}),
+                            this.odoo.call("scan_location", {barcode: text})
                         );
                     },
                     enter: () => {
@@ -81,86 +81,81 @@ const StockBatchTransfer = {
                     },
                     on_scan: ({text}) => {
                         const intInText =
-                            "" + text == parseInt(text, 10) &&
-                            parseInt(text, 10);
+                            "" + text == parseInt(text, 10) && parseInt(text, 10);
 
                         if (this.currentDestLocation) {
                             if (this.lastScanned) {
                                 if (intInText && intInText !== 0) {
                                     this.wait_call(
-                                        this.odoo.call(
-                                            "set_product_qty",
-                                            {
-                                                barcode: this.lastScanned,
-                                                current_source_location_id: this.currentSourceLocation,
-                                                dest_location_id: this.currentDestLocation,
-                                                qty: intInText,
-                                            }
-                                        ),
+                                        this.odoo.call("set_product_qty", {
+                                            barcode: this.lastScanned,
+                                            current_source_location_id: this
+                                                .currentSourceLocation,
+                                            dest_location_id: this.currentDestLocation,
+                                            qty: intInText,
+                                        })
                                     );
-                                }
-                                else if (text === this.lastScanned) {
+                                } else if (text === this.lastScanned) {
                                     this.wait_call(
-                                        this.odoo.call(
-                                            "drop_product_to_location",
-                                            {
-                                                barcode: text,
-                                                current_source_location_id: this.currentSourceLocation,
-                                                dest_location_id: this.currentDestLocation,
-                                            }
-                                        ),
+                                        this.odoo.call("drop_product_to_location", {
+                                            barcode: text,
+                                            current_source_location_id: this
+                                                .currentSourceLocation,
+                                            dest_location_id: this.currentDestLocation,
+                                        }),
                                         ({message}) => {
-                                            if (!message || message.message_type !== "error") {
+                                            if (
+                                                !message ||
+                                                message.message_type !== "error"
+                                            ) {
                                                 this.lastScanned = text;
                                             }
                                         }
                                     );
-                                }
-                                else {
+                                } else {
                                     this.wait_call(
-                                        this.odoo.call(
-                                            "set_product_destination",
-                                            {
-                                                barcode: text,
-                                                product_barcode: this.lastScanned,
-                                                current_source_location_id: this.currentSourceLocation,
-                                                dest_location_id: this.currentDestLocation,
-                                            }
-                                        ),
+                                        this.odoo.call("set_product_destination", {
+                                            barcode: text,
+                                            product_barcode: this.lastScanned,
+                                            current_source_location_id: this
+                                                .currentSourceLocation,
+                                            dest_location_id: this.currentDestLocation,
+                                        }),
                                         ({message}) => {
-                                            if (message && message.message_type === "success") {
+                                            if (
+                                                message &&
+                                                message.message_type === "success"
+                                            ) {
                                                 this.lastScanned = null;
                                             }
                                         }
                                     );
                                 }
-                            }
-                            else {
+                            } else {
                                 this.wait_call(
-                                    this.odoo.call(
-                                        "drop_product_to_location",
-                                        {
-                                            barcode: text,
-                                            current_source_location_id: this.currentSourceLocation,
-                                            dest_location_id: this.currentDestLocation,
-                                        }
-                                    ),
+                                    this.odoo.call("drop_product_to_location", {
+                                        barcode: text,
+                                        current_source_location_id: this
+                                            .currentSourceLocation,
+                                        dest_location_id: this.currentDestLocation,
+                                    }),
                                     ({message}) => {
-                                        if (!message || message.message_type !== "error") {
+                                        if (
+                                            !message ||
+                                            message.message_type !== "error"
+                                        ) {
                                             this.lastScanned = text;
                                         }
                                     }
                                 );
                             }
-                        }
-                        else {
+                        } else {
                             this.wait_call(
-                                this.odoo.call("set_current_location",
-                                    {
-                                        barcode: text,
-                                        current_source_location_id: this.currentSourceLocation
-                                    }
-                                ),
+                                this.odoo.call("set_current_location", {
+                                    barcode: text,
+                                    current_source_location_id: this
+                                        .currentSourceLocation,
+                                })
                             );
                         }
                     },
