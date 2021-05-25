@@ -101,6 +101,10 @@ main.v-content > .v-content__wrap > .header .container {
     box-shadow: none;
 }
 
+.detail .theme--light.v-sheet--outlined {
+    border: 3px solid rgba(162, 121, 0, 0.84) !important;
+}
+
 .detail.item-detail-card.loud .v-card__text.details {
     font-size: 1.3em;
     line-height: 1.4em;

@@ -10,6 +10,7 @@ from .exception import (
     BarcodeNotFoundError,
     DestLocationNotAllowed,
     response_decorator,
+    OperationNotFoundError,
 )
 
 class StockBatchTransfer(Component):
@@ -43,13 +44,76 @@ class StockBatchTransfer(Component):
             ("location_id.id", "=", location_id),
         ]
 
-    def _move_lines_product_search_domain(self, location_id, product_barcode):
-        return [
-            ("picking_id.picking_type_id", "in", self.picking_types.ids),
-            ("picking_id.state", "=", "assigned"),
-            ("location_id.id", "=", location_id),
-            ("product_id.barcode", "=", product_barcode),
-        ]
+    def _get_data_for_scan_products(
+        self,
+        current_source_location_id,
+        product_barcode = None,
+        location_barcode = None,
+        dest_location_id = None,
+    ):
+        search = self._actions_for("search")
+        current_source_location = self.env["stock.location"].browse(current_source_location_id)
+        move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(current_source_location.id))
+
+        dest_location = None
+        product_move_lines = []
+        location = None
+        if dest_location_id:
+            dest_location = self.env["stock.location"].browse(dest_location_id)
+
+        if product_barcode:
+            product_move_lines = [line for line in move_lines_children if line.product_id.barcode == product_barcode]
+
+        if location_barcode:
+            location = search.location_from_scan(location_barcode)
+
+        return (
+            current_source_location,
+            move_lines_children,
+            product_move_lines,
+            location,
+            dest_location,
+        )
+
+
+    def _create_data_for_scan_products(
+        self,
+        all_move_lines = [],
+        current_source_location_id = None,
+        selected_location_id = None,
+        selected_product_barcode = None,
+    ):
+        move_lines = [line for line in all_move_lines if not line.shopfloor_checkout_done]
+        move_lines_done = [line for line in all_move_lines if line.shopfloor_checkout_done]
+
+        return {
+            "move_lines": self.data.move_lines(move_lines, with_picking=True),
+            "move_lines_done": self.data.move_lines(move_lines_done, with_picking=True),
+            "id": current_source_location_id,
+            "selected_location": selected_location_id,
+            "selected_product": selected_product_barcode,
+        };
+
+    def _create_response_for_scan_products(
+        self,
+        all_move_lines,
+        current_source_location_id,
+        selected_location_id = None,
+        selected_product_barcode = None,
+        message = None,
+    ):
+        data = self._create_data_for_scan_products(
+            all_move_lines,
+            current_source_location_id,
+            selected_location_id,
+            selected_product_barcode,
+        )
+
+        return self._response(
+            next_state="scan_products",
+            data=data,
+            message=message,
+        )
 
     def list_input_location(self):
         domain = self._location_search_domain()
@@ -62,31 +126,86 @@ class StockBatchTransfer(Component):
             }
         )
 
+    def _set_product_move_line_quantity(
+            self, current_source_location, product_move_lines, qty,
+        ):
+        quantity_to_add = qty
+        move_line_index = 0
+
+        while quantity_to_add > 0 and move_line_index < len(product_move_lines):
+            current_move_line = product_move_lines[move_line_index]
+            quantity_possible_to_add = (
+                current_move_line.product_uom_qty - current_move_line.qty_done
+            )
+            quantity_added_to_move_line = min(quantity_possible_to_add, quantity_to_add)
+            current_move_line.qty_done += quantity_added_to_move_line
+            quantity_to_add -= quantity_added_to_move_line
+
+            if current_move_line.qty_done == current_move_line.product_uom_qty:
+                move_line_index += 1
+
+        if quantity_to_add > 0:
+            move_lines_data = self._create_data_for_scan_products(current_source_location)
+            raise OperationNotFoundError(
+                state="scan_products", data=move_lines_data,
+            )
+
+    def _reset_product_quantity(
+        self, product_move_lines,
+    ):
+        for line in product_move_lines:
+            if not line.shopfloor_checkout_done:
+                line.qty_done = 0
+
+    def _put_move_lines_in_destination(
+        self,
+        product_move_lines,
+        destination,
+    ):
+        quantity_stored = 0
+
+        for line in product_move_lines:
+            quantity_stored += line.qty_done
+            if line.qty_done == line.product_uom_qty:
+                line.write({"location_dest_id": destination.id})
+                line.shopfloor_checkout_done = True
+            elif line.qty_done < line.product_uom_qty:
+                new_line, qty_check = line._split_qty_to_be_done(line.qty_done)
+
+                line.write({"location_dest_id": destination.id})
+                line.shopfloor_checkout_done = True
+
+        return {
+            "message_type": "success",
+            "body": _("{} {} put in {}").format(
+		quantity_stored,
+		product_move_lines[0].product_id.name,
+		destination.name,
+            ),
+	}
+
+    @response_decorator
     def scan_location(self, barcode):
         search = self._actions_for("search")
         location = search.location_from_scan(barcode)
 
         move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(location.id))
 
-        return self._response(
-            next_state="scan_products",
-            data={
-                "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
-                "id": location.id,
-            },
+        return self._create_response_for_scan_products(
+            move_lines_children,
+            location.id,
             message={
                 "message_type": "success",
                 "body": _("{} location selected".format(location.display_name))
-            }
+            },
         )
 
     @response_decorator
     def set_current_location(self, barcode, current_source_location_id):
-        search = self._actions_for("search")
-        location = search.location_from_scan(barcode)
-        current_source_location = self.env["stock.location"].browse(current_source_location_id)
-
-        move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(current_source_location.id))
+        current_source_location, move_lines_children, _, location, _ = self._get_data_for_scan_products(
+            current_source_location_id=current_source_location_id,
+            location_barcode=barcode,
+        )
 
         #We check if the current location is a destination location of at least one of the move
         #of the current_source_location
@@ -98,68 +217,149 @@ class StockBatchTransfer(Component):
 
         #If it's not we tell the user that he can't chose this destination
         if not valid_location:
+            data = self._create_data_for_scan_products(
+                move_lines_children,
+                current_source_location.id,
+            )
             raise DestLocationNotAllowed(
                 state="scan_products",
-                data={
-                    "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
-                    "id": current_source_location.id,
-                }
+                data=data,
             )
 
-        return self._response(
-            next_state="scan_products",
-            data={
-                "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
-                "id": current_source_location.id,
-                "selected_location": location.id,
-            },
+        return self._create_response_for_scan_products(
+            move_lines_children,
+            current_source_location.id,
+            location.id,
         )
 
     @response_decorator
     def drop_product_to_location(self, barcode, current_source_location_id, dest_location_id):
-        dest_location = self.env["stock.location"].browse(dest_location_id)
-        current_source_location = self.env["stock.location"].browse(current_source_location_id)
-        move_lines_children = self.env["stock.move.line"].search(self._move_lines_search_domain(current_source_location.id))
-        product_move_lines = self.env["stock.move.line"].search(
-            self._move_lines_product_search_domain(
-                current_source_location.id,
-                barcode,
-            )
+        current_source_location, move_lines_children, product_move_lines, _, dest_location = self._get_data_for_scan_products(
+            current_source_location_id=current_source_location_id,
+            dest_location_id=dest_location_id,
+            product_barcode=barcode,
         )
 
         if not dest_location or not current_source_location:
+            data = self._create_data_for_scan_products(
+                move_lines_children,
+                current_source_location.id,
+                dest_location.id,
+            )
             raise LocationNotFound(
                 state="scan_products",
-                data={
-                    "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
-                    "id": current_source_location.id,
-                    "selected_location": dest_location_id,
-                }
+                data=data,
             )
 
         if len(product_move_lines) is 0:
+            data = self._create_data_for_scan_products(
+                move_lines_children,
+                current_source_location.id,
+                dest_location.id,
+            )
             raise BarcodeNotFoundError(
                 state="scan_products",
-                data={
-                    "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
-                    "id": current_source_location.id,
-                    "selected_location": dest_location_id,
-                }
+                data=data,
             )
 
-        product_move_lines[0].qty_done += 1
+        self._set_product_move_line_quantity(current_source_location, product_move_lines, 1)
 
-        return self._response(
-            next_state="scan_products",
-            data={
-                "move_lines": self.data.move_lines(move_lines_children, with_picking=True),
-                "id": current_source_location.id,
-                "selected_location": dest_location_id,
-                "selected_product": barcode,
-            },
+        return self._create_response_for_scan_products(
+            move_lines_children,
+            current_source_location.id,
+            dest_location.id,
+            barcode,
         )
 
+    @response_decorator
+    def set_product_qty(
+        self,
+        barcode,
+        current_source_location_id,
+        dest_location_id,
+        qty,
+    ):
+        current_source_location, move_lines_children, product_move_lines, _, dest_location = self._get_data_for_scan_products(
+            current_source_location_id=current_source_location_id,
+            dest_location_id=dest_location_id,
+            product_barcode=barcode,
+        )
 
+        if not dest_location or not current_source_location:
+            data = self._create_data_for_scan_products(
+                move_lines_children,
+                current_source_location.id,
+                dest_location.id,
+            )
+            raise LocationNotFound(
+                state="scan_products",
+                data=data,
+            )
+
+        if len(product_move_lines) is 0:
+            data = self._create_data_for_scan_products(
+                move_lines_children,
+                current_source_location.id,
+                dest_location.id,
+            )
+            raise BarcodeNotFoundError(
+                state="scan_products",
+                data=data,
+            )
+
+        self._set_product_move_line_quantity(current_source_location, product_move_lines, qty)
+
+        return self._create_response_for_scan_products(
+            move_lines_children,
+            current_source_location.id,
+            dest_location.id,
+            barcode,
+        )
+
+    @response_decorator
+    def set_product_destination(
+        self,
+        barcode,
+        product_barcode,
+        current_source_location_id,
+        dest_location_id,
+    ):
+        current_source_location, move_lines_children, product_move_lines, barcode_location, dest_location = self._get_data_for_scan_products(
+            current_source_location_id=current_source_location_id,
+            location_barcode=barcode,
+            product_barcode=product_barcode,
+            dest_location_id=dest_location_id,
+        )
+
+        if not barcode_location:
+            data = self._create_data_for_scan_products(
+                move_lines_children,
+                current_source_location.id,
+                dest_location.id,
+                product_barcode,
+            )
+            raise LocationNotFound(
+                state="scan_products",
+                data=data,
+            )
+
+
+        message = None
+
+        if barcode_location.id == current_source_location.id:
+            self._reset_product_quantity(product_move_lines)
+            message = {
+                "message_type": "success",
+                "body": "Product succesfully put back in source location"
+            }
+        else:
+            message = self._put_move_lines_in_destination(product_move_lines, barcode_location)
+
+        return self._create_response_for_scan_products(
+            move_lines_children,
+            current_source_location.id,
+            message=message,
+        )
 
 class ShopfloorStockBatchTransferValidator(Component):
     """Validators for the Delivery endpoints"""
@@ -183,6 +383,22 @@ class ShopfloorStockBatchTransferValidator(Component):
     def drop_product_to_location(self):
         return {
             "barcode": {"required": True, "type": "string"},
+            "current_source_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "dest_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+        }
+
+    def set_product_qty(self):
+        return {
+            "barcode": {"required": True, "type": "string"},
+            "current_source_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "dest_location_id": {"coerce": to_int, "required": True, "type": "integer"},
+            "qty": {"coerce": to_int, "required": True, "type": "integer"},
+        }
+
+    def set_product_destination(self):
+        return {
+            "barcode": {"required": True, "type": "string"},
+            "product_barcode": {"required": True, "type": "string"},
             "current_source_location_id": {"coerce": to_int, "required": True, "type": "integer"},
             "dest_location_id": {"coerce": to_int, "required": True, "type": "integer"},
         }
@@ -222,9 +438,12 @@ class ShopfloorStockBatchTransferValidatorResponse(Component):
             "move_lines": self.schemas._schema_list_of(
                 self.schemas.move_line(with_packaging=True, with_picking=True)
             ),
+            "move_lines_done": self.schemas._schema_list_of(
+                self.schemas.move_line(with_packaging=True, with_picking=True)
+            ),
             "id": {"required": True, "type": "integer"},
-            "selected_location": {"required": False, "type": "integer"},
-            "selected_product": {"required": False, "type": "string"},
+            "selected_location": {"required": False, "type": "integer", "nullable": True},
+            "selected_product": {"required": False, "type": "string", "nullable": True},
         }
 
     def list_input_location(self):
@@ -243,6 +462,16 @@ class ShopfloorStockBatchTransferValidatorResponse(Component):
         )
 
     def drop_product_to_location(self):
+        return self._response_schema(
+            next_states={"scan_products"}
+        )
+
+    def set_product_qty(self):
+        return self._response_schema(
+            next_states={"scan_products"}
+        )
+
+    def set_product_destination(self):
         return self._response_schema(
             next_states={"scan_products"}
         )
