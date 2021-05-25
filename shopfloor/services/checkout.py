@@ -1128,6 +1128,11 @@ class Checkout(Component):
         return self._response_for_scanned_product(picking, message)
 
     def scan_product(self, picking_id, barcode):
+        """Adds 1 to a product quantity done
+
+        Transitions:
+        * scan_products: in all cases
+        """
         picking = self.env["stock.picking"].browse(picking_id)
         message = self._check_picking_status(picking)
         if message:
