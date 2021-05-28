@@ -1,5 +1,7 @@
 from functools import wraps
 
+from odoo import _
+
 
 class ScenarioError(Exception):
     def __init__(self, response):
@@ -77,7 +79,16 @@ class TooMuchProductInCommandError(MessageBasedError):
     def __init__(self, state, data):
         message = {
             "message_type": "error",
-            "body": "Too much product in command",
+            "body": _("Too much product in command"),
+        }
+        super().__init__(state, data, message)
+
+
+class NoMoreOrderToSkip(MessageBasedError):
+    def __init__(self, state, data):
+        message = {
+            "message_type": "error",
+            "body": _("There's no more order to skip"),
         }
         super().__init__(state, data, message)
 
@@ -86,7 +97,7 @@ class ProductNotInSource(MessageBasedError):
     def __init__(self, state, data):
         message = {
             "message_type": "error",
-            "body": "Product is not in source location",
+            "body": _("Product is not in source location"),
         }
         super().__init__(state, data, message)
 
@@ -95,7 +106,7 @@ class ProductNotInOrder(MessageBasedError):
     def __init__(self, state, data):
         message = {
             "message_type": "error",
-            "body": "Product is not present in the receipt",
+            "body": _("Product is not present in the receipt"),
         }
         super().__init__(state, data, message)
 

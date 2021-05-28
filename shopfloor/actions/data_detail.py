@@ -75,9 +75,8 @@ class DataDetailAction(Component):
             "picking_count",
             "move_line_count",
             ("picking_ids:pickings", self._full_picking_parser),
-            "total_weight:weight"
+            "total_weight:weight",
         ]
-
 
     @ensure_model("stock.picking.batch")
     def picking_batch(self, record, **kw):
@@ -86,7 +85,6 @@ class DataDetailAction(Component):
         data = self._jsonify(record, parser, **kw)
 
         return data
-
 
     def package_detail(self, record, picking=None, **kw):
         # Define a new method to not overload the base one which is used in many places

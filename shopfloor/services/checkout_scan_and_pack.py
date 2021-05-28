@@ -8,6 +8,13 @@ from odoo import _
 from odoo.addons.base_rest.components.service import to_int
 from odoo.addons.component.core import Component
 
+from .exception import (
+    BarcodeNotFoundError,
+    NoMoreOrderToSkip,
+    TooMuchProductInCommandError,
+    response_decorator,
+)
+
 
 class CheckoutScanAndPack(Component):
     """
@@ -37,18 +44,65 @@ class CheckoutScanAndPack(Component):
     _usage = "checkout_scan_and_pack"
     _description = __doc__
 
-    def _response_for_select_line(self, picking, message=None, skip=None):
-        next_state = "scan_products"
+    def _get_data_for_scan_products(
+        self, picking_id, move_line_id=None,
+    ):
+        picking = self.env["stock.picking"].browse(picking_id)
+        move_line = self.env["stock.move.line"].browse(move_line_id)
 
+        message = self._check_picking_status(picking)
+
+        return (
+            picking,
+            move_line,
+            message,
+        )
+
+    def _create_data_for_scan_products(
+        self, picking,
+    ):
+        data = self.data.picking(picking)
+        data.update(
+            {
+                "move_lines": self.data.move_lines(
+                    picking.move_line_ids, with_package_dest=True
+                )
+            }
+        )
+        return data
+
+    def _create_response_for_scan_products(
+        self, picking, message=None, skip=None,
+    ):
         return self._response(
-            next_state=next_state,
-            data={"picking": self._data_for_stock_picking(picking), "skip": skip},
+            next_state="scan_products",
+            data={
+                "picking": self._create_data_for_scan_products(picking),
+                "skip": skip,
+            },
             message=message,
         )
 
-    def _response_for_summary(self, picking, need_confirm=False, message=None):
+    def _set_move_line_qty(
+        self, move_line, qty, picking,
+    ):
+
+        if qty > move_line.product_uom_qty:
+            raise TooMuchProductInCommandError(
+                state="scan_products",
+                data=self._create_data_for_scan_products(picking),
+            )
+
+        move_line.qty_done = qty
+
+        if move_line.qty_done == move_line.product_uom_qty:
+            move_line.shopfloor_checkout_done = True
+        else:
+            move_line.shopfloor_checkout_done = False
+
+    def _response_for_confirm_done(self, picking, need_confirm=False, message=None):
         return self._response(
-            next_state="summary" if not need_confirm else "confirm_done",
+            next_state="confirm_done",
             data={
                 "picking": self._data_for_stock_picking(picking, done=True),
                 "all_processed": not bool(self._lines_to_pack(picking)),
@@ -66,23 +120,6 @@ class CheckoutScanAndPack(Component):
         )
         data = {"pickings": self.data.pickings(pickings)}
         return self._response(next_state="manual_selection", data=data, message=message)
-
-    def _response_for_change_packaging(self, picking, package, packaging_list):
-        if not package:
-            return self._response_for_summary(
-                picking, message=self.msg_store.record_not_found()
-            )
-
-        return self._response(
-            next_state="change_packaging",
-            data={
-                "picking": self.data.picking(picking),
-                "package": self.data.package(
-                    package, picking=picking, with_packaging=True
-                ),
-                "packaging": self.data.packaging_list(packaging_list.sorted()),
-            },
-        )
 
     def _select_picking(self, picking, state_for_error, skip=0):
         if not picking:
@@ -109,30 +146,23 @@ class CheckoutScanAndPack(Component):
             return self._response_for_select_document(
                 message=self.msg_store.stock_picking_not_available(picking)
             )
-        return self._response_for_select_line(picking, skip=skip)
-
-    def _data_for_move_lines(self, lines, **kw):
-        move_line = self.data.move_lines(lines, **kw)
-        return move_line
+        return self._create_response_for_scan_products(picking, skip=skip)
 
     def _data_for_stock_picking(self, picking, done=False):
         data = self.data.picking(picking)
         line_picker = self._lines_checkout_done if done else self._lines_to_pack
+        move_lines = picking.move_line_ids.filtered(
+            lambda move_line: move_line.qty_done > 0
+            and move_line.shopfloor_checkout_done
+        )
         data.update(
             {
-                "move_lines": self._data_for_move_lines(
-                    line_picker(picking), with_packaging=done
+                "move_lines": self.data.move_lines(
+                    move_lines, with_packaging=done, with_package_dest=True,
                 )
             }
         )
         return data
-
-    def _lines_checkout_done(self, picking):
-        return picking.move_line_ids.filtered(self._filter_lines_checkout_done)
-
-    def _lines_to_pack(self, picking):
-        # if we scan one by one we want all the lines
-        return picking.move_line_ids
 
     def _domain_for_list_stock_picking(self):
         return [
@@ -143,20 +173,7 @@ class CheckoutScanAndPack(Component):
     def _order_for_list_stock_picking(self):
         return "scheduled_date asc, id asc"
 
-
-    @staticmethod
-    def _filter_lines_unpacked(move_line):
-        return (
-            move_line.qty_done == 0 or move_line.shopfloor_user_id
-        ) and not move_line.shopfloor_checkout_done
-
-    @staticmethod
-    def _filter_lines_checkout_done(move_line):
-        return move_line.qty_done > 0 and move_line.shopfloor_checkout_done
-
-    def _get_allowed_packaging(self):
-        return self.env["product.packaging"].search([("product_id", "=", False)])
-
+    @response_decorator
     def scan_document(self, barcode, skip=0):
         """Scan a package, a stock.picking or a location
 
@@ -198,12 +215,9 @@ class CheckoutScanAndPack(Component):
                 pickings = lines.mapped("picking_id")
                 if skip >= len(pickings):
                     picking = pickings[-1]
-                    return self._response_for_select_line(
-                        picking,
-                        message={
-                            "message_type": "error",
-                            "body": _("There's no more order to skip"),
-                        },
+                    raise NoMoreOrderToSkip(
+                        state="scan_products",
+                        data=self._create_data_for_scan_products(picking),
                     )
                 picking = pickings[skip : skip + 1]  # take the first one
 
@@ -227,53 +241,67 @@ class CheckoutScanAndPack(Component):
                     picking = pickings
         return self._select_picking(picking, "select_document", skip)
 
-    def list_packaging(self, picking_id, package_id):
-        """List the available package types for a package
+    @response_decorator
+    def scan_product(self, picking_id, barcode):
+        """Adds 1 to a product quantity done
 
-        For a package, we can change the packaging. The available
-        packaging are the ones with no product.
+        if the qty_done of the move line reaches the product_uom_qty
+        of the move line if sets shopfloor_checkout_done to True
 
         Transitions:
-        * change_packaging
-        * summary: if the package_id no longer exists
+        * scan_products: in all cases
         """
-        picking = self.env["stock.picking"].browse(picking_id)
-        message = self._check_picking_status(picking)
-        if message:
-            return self._response_for_select_document(message=message)
-        package = self.env["stock.quant.package"].browse(package_id).exists()
-        packaging_list = self._get_allowed_packaging()
-        return self._response_for_change_packaging(picking, package, packaging_list)
-
-    def set_quantity(self, picking_id, move_line_id, qty):
-        picking = self.env["stock.picking"].browse(picking_id)
-        move_line = self.env["stock.move.line"].browse(move_line_id)
-
-        message = self._check_picking_status(picking)
+        picking, _, message = self._get_data_for_scan_products(picking_id)
 
         if message:
             return self._response_for_select_document(message=message)
 
-        quantity_to_set = qty
+        # If there are more than one move_lines with the same product
+        # just pick the first one that hasn't a quantity done equal to
+        # it's target quantity
+        move_lines = picking.move_line_ids.filtered(
+            lambda l: l.product_id.barcode == barcode and not l.shopfloor_checkout_done
+        )
 
-        if quantity_to_set > move_line.product_uom_qty:
-            return self._response_for_scanned_product(
-                picking,
-                message={
-                    "message_type": "error",
-                    "body": "Too much product in command",
-                },
+        if len(move_lines) > 0:
+            move_line = move_lines[0]
+        else:
+            raise BarcodeNotFoundError(
+                state="scan_products",
+                data=self._create_data_for_scan_products(picking),
             )
 
-        move_line.qty_done = quantity_to_set
+        quantity_to_set = move_line.qty_done + 1
 
-        if move_line.qty_done == move_line.product_uom_qty:
-            move_line.shopfloor_checkout_done = True
-        else:
-            move_line.shopfloor_checkout_done = False
+        self._set_move_line_qty(move_line, quantity_to_set, picking)
 
-        return self._response_for_scanned_product(picking, message)
+        return self._create_response_for_scan_products(picking, message)
 
+    @response_decorator
+    def set_quantity(self, picking_id, move_line_id, qty):
+        """Sets qty to a product quantity done
+
+        if the qty_done of the move line reaches the product_uom_qty
+        of the move line if sets shopfloor_checkout_done to True
+
+        if the quantity qty_done is set to a value less than product_uom_qty
+        of the move it sets shopfloor_checkout_done to False
+
+        Transitions:
+        * scan_products: in all cases
+        """
+        picking, move_line, message = self._get_data_for_scan_products(
+            picking_id, move_line_id,
+        )
+
+        if message:
+            return self._response_for_select_document(message=message)
+
+        self._set_move_line_qty(move_line, qty, picking)
+
+        return self._create_response_for_scan_products(picking, message)
+
+    @response_decorator
     def list_stock_picking(self):
         """List stock.picking records available
 
@@ -285,6 +313,7 @@ class CheckoutScanAndPack(Component):
         """
         return self._response_for_manual_selection()
 
+    @response_decorator
     def select(self, picking_id):
         """Select a stock picking for the scenario
 
@@ -303,63 +332,11 @@ class CheckoutScanAndPack(Component):
         * select_line: the "normal" case, when the user has to put in pack/move
           lines
         """
-        picking = self.env["stock.picking"].browse(picking_id)
-        message = self._check_picking_status(picking)
+        picking, _, message = self._create_data_for_scan_products(picking_id,)
+
         if message:
             return self._response_for_manual_selection(message=message)
         return self._select_picking(picking, "manual_selection")
-
-    def scan_product(self, picking_id, barcode):
-        """Adds 1 to a product quantity done
-
-        Transitions:
-        * scan_products: in all cases
-        """
-        picking = self.env["stock.picking"].browse(picking_id)
-        message = self._check_picking_status(picking)
-        if message:
-            return self._response_for_select_document(message=message)
-
-        # If there are more than one move_lines with the same product
-        # just pick the first one that hasn't a quantity done equal to
-        # it's target quantity
-        move_lines = picking.move_line_ids.filtered(
-            lambda l: l.product_id.barcode == barcode and not l.shopfloor_checkout_done
-        )
-
-        if len(move_lines) > 0:
-            move_line = move_lines[0]
-        else:
-            return self._response_for_scanned_product(
-                picking, message=self.msg_store.barcode_not_found()
-            )
-
-        quantity_to_set = move_line.qty_done + 1
-
-        if quantity_to_set > move_line.product_uom_qty:
-            return self._response_for_scanned_product(
-                picking,
-                message={
-                    "message_type": "error",
-                    "body": "Too much product in command",
-                },
-            )
-
-        move_line.qty_done = quantity_to_set
-
-        if move_line.qty_done == move_line.product_uom_qty:
-            move_line.shopfloor_checkout_done = True
-        else:
-            move_line.shopfloor_checkout_done = False
-
-        return self._response_for_scanned_product(picking, message)
-
-    def _response_for_scanned_product(self, picking, message=None):
-        return self._response(
-            next_state="scan_products",
-            data={"picking": self._data_for_stock_picking(picking)},
-            message=message,
-        )
 
     def done(self, picking_id, confirmation=False):
         """Set the moves as done
@@ -431,12 +408,6 @@ class ShopfloorCheckoutScanAndPackValidator(Component):
             "qty": {"coerce": to_int, "required": True, "type": "integer"},
         }
 
-    def list_packaging(self):
-        return {
-            "picking_id": {"coerce": to_int, "required": True, "type": "integer"},
-            "package_id": {"coerce": to_int, "required": True, "type": "integer"},
-        }
-
     def done(self):
         return {
             "picking_id": {"coerce": to_int, "required": True, "type": "integer"},
@@ -462,22 +433,7 @@ class ShopfloorCheckoutScanAndPackValidatorResponse(Component):
         return {
             "select_document": {},
             "manual_selection": self._schema_selection_list,
-            "select_line": self._schema_stock_picking_details,
             "scan_products": self._schema_stock_picking_details,
-            "select_package": dict(
-                self._schema_selected_lines,
-                packing_info={"type": "string", "nullable": True},
-                no_package_enabled={
-                    "type": "boolean",
-                    "nullable": True,
-                    "required": False,
-                },
-            ),
-            "change_quantity": self._schema_selected_lines,
-            "select_dest_package": self._schema_select_package,
-            "select_delivery_packaging": self._schema_select_delivery_packaging,
-            "summary": self._schema_summary,
-            "change_packaging": self._schema_select_packaging,
             "confirm_done": self._schema_confirm_done,
         }
 
@@ -500,13 +456,6 @@ class ShopfloorCheckoutScanAndPackValidatorResponse(Component):
         return self._schema_stock_picking()
 
     @property
-    def _schema_summary(self):
-        return dict(
-            self._schema_stock_picking(lines_with_packaging=True),
-            all_processed={"type": "boolean"},
-        )
-
-    @property
     def _schema_confirm_done(self):
         return self._schema_stock_picking(lines_with_packaging=True)
 
@@ -519,72 +468,14 @@ class ShopfloorCheckoutScanAndPackValidatorResponse(Component):
             }
         }
 
-    @property
-    def _schema_select_package(self):
-        return {
-            "selected_move_lines": {
-                "type": "list",
-                "schema": {"type": "dict", "schema": self.schemas.move_line()},
-            },
-            "packages": {
-                "type": "list",
-                "schema": {
-                    "type": "dict",
-                    "schema": self.schemas.package(with_packaging=True),
-                },
-            },
-            "picking": {"type": "dict", "schema": self.schemas.picking()},
-        }
-
-    @property
-    def _schema_select_delivery_packaging(self):
-        return {
-            "packaging": self.schemas._schema_list_of(
-                self.schemas.delivery_packaging()
-            ),
-        }
-
-    @property
-    def _schema_select_packaging(self):
-        return {
-            "picking": {"type": "dict", "schema": self.schemas.picking()},
-            "package": {
-                "type": "dict",
-                "schema": self.schemas.package(with_packaging=True),
-            },
-            "packaging": {
-                "type": "list",
-                "schema": {"type": "dict", "schema": self.schemas.packaging()},
-            },
-        }
-
-    @property
-    def _schema_selected_lines(self):
-        return {
-            "selected_move_lines": {
-                "type": "list",
-                "schema": {"type": "dict", "schema": self.schemas.move_line()},
-            },
-            "picking": {"type": "dict", "schema": self.schemas.picking()},
-        }
-
     def scan_document(self):
-        return self._response_schema(
-            next_states={"select_document", "select_line", "summary", "scan_products"}
-        )
+        return self._response_schema(next_states={"select_document", "scan_products"})
 
     def list_stock_picking(self):
         return self._response_schema(next_states={"manual_selection"})
 
     def select(self):
-        return self._response_schema(
-            next_states={"scan_products", "manual_selection", "summary", "select_line"}
-        )
-
-    def scan_line(self):
-        return self._response_schema(
-            next_states={"select_line", "select_package", "summary"}
-        )
+        return self._response_schema(next_states={"scan_products", "manual_selection"})
 
     def scan_product(self):
         return self._response_schema(next_states={"scan_products"})
@@ -592,8 +483,5 @@ class ShopfloorCheckoutScanAndPackValidatorResponse(Component):
     def set_quantity(self):
         return self._response_schema(next_states={"scan_products"})
 
-    def list_packaging(self):
-        return self._response_schema(next_states={"change_packaging", "summary"})
-
     def done(self):
-        return self._response_schema(next_states={"summary", "confirm_done"})
+        return self._response_schema(next_states={"confirm_done"})

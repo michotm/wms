@@ -131,11 +131,20 @@ class DataAction(Component):
         return self._simple_record_parser() + ["ref"]
 
     @ensure_model("stock.move.line")
-    def move_line(self, record, with_picking=False, **kw):
+    def move_line(self, record, with_picking=False, with_package_dest=False, **kw):
         record = record.with_context(location=record.location_id.id)
         parser = self._move_line_parser
         if with_picking:
             parser += [("picking_id:picking", self._picking_parser)]
+        if with_package_dest:
+            parser += [
+                (
+                    "result_package_id:package_dest",
+                    lambda rec, fname: self.package(
+                        rec.result_package_id, rec.picking_id, with_packaging=True
+                    ),
+                ),
+            ]
         data = self._jsonify(record, parser)
         if data:
             data.update(
@@ -170,12 +179,6 @@ class DataAction(Component):
             ("lot_id:lot", self._lot_parser),
             ("location_id:location_src", self._location_parser),
             ("location_dest_id:location_dest", self._location_parser),
-            (
-                "result_package_id:package_dest",
-                lambda rec, fname: self.package(
-                    rec.result_package_id, rec.picking_id, with_packaging=True
-                ),
-            ),
             ("move_id:priority", lambda rec, fname: rec.move_id.priority or "",),
         ]
 

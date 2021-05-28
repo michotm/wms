@@ -54,28 +54,6 @@ const CheckoutScanAndPack = {
                     </v-row>
                 </div>
             </div>
-            <div v-if="state_is('summary')">
-                <picking-summary
-                    :record="state.data.picking"
-                    :records_grouped="utils.wms.group_lines_by_location(state.data.picking.move_lines, {'group_key': 'location_dest', 'prepare_records': utils.wms.group_by_pack})"
-                    :list_options="{list_item_options: {actions: ['action_change_pkg', 'action_cancel_line']}}"
-                    :key="make_state_component_key(['picking-summary'])"
-                    />
-                <div class="button-list button-vertical-list full">
-                    <v-row align="center" v-if="!state.data.all_processed">
-                        <v-col class="text-center" cols="12">
-                            <btn-action @click="$root.trigger('continue')">Continue checkout</btn-action>
-                        </v-col>
-                    </v-row>
-                    <v-row align="center">
-                        <v-col class="text-center" cols="12">
-                            <btn-action action="todo"
-                                @click="$root.trigger('mark_as_done')"
-                                :disabled="state.data.picking.move_lines.length < 1">Mark as done</btn-action>
-                        </v-col>
-                    </v-row>
-                </div>
-            </div>
             <div v-if="state_is('confirm_done')">
                 <div class="button-list button-vertical-list full">
                     <v-row align="center">
@@ -235,55 +213,6 @@ const CheckoutScanAndPack = {
                         );
                     },
                 },
-                summary: {
-                    display_info: {
-                        title: "Summary",
-                    },
-                    events: {
-                        select: "on_select",
-                        back: "on_back",
-                        cancel_picking_line: "on_cancel",
-                        pkg_change_type: "on_pkg_change_type",
-                        mark_as_done: "on_mark_as_done",
-                        continue: "on_continue",
-                    },
-                    on_back: () => {
-                        this.state_to("start");
-                        this.reset_notification();
-                    },
-                    on_pkg_change_type: pkg => {
-                        this.wait_call(
-                            this.odoo.call("list_packaging", {
-                                picking_id: this.state.data.picking.id,
-                                package_id: pkg.id,
-                            })
-                        );
-                    },
-                    on_cancel: data => {
-                        this.wait_call(
-                            this.odoo.call("cancel_line", {
-                                picking_id: this.state.data.picking.id,
-                                // we get either line_id or package_id
-                                package_id: data.package_id,
-                                line_id: data.line_id,
-                            })
-                        );
-                    },
-                    on_mark_as_done: () => {
-                        this.wait_call(
-                            this.odoo.call("done", {
-                                picking_id: this.state.data.picking.id,
-                            })
-                        );
-                    },
-                    on_continue: () => {
-                        this.wait_call(
-                            this.odoo.call("select", {
-                                picking_id: this.state.data.picking.id,
-                            })
-                        );
-                    },
-                },
                 confirm_done: {
                     display_info: {
                         title: "Confirm done",
@@ -300,7 +229,7 @@ const CheckoutScanAndPack = {
                         );
                     },
                     on_back: () => {
-                        this.state_to("summary");
+                        this.state_to("scan_products");
                         this.reset_notification();
                     },
                 },
