@@ -33,7 +33,7 @@ const StockBatchTransfer = {
                     :lastScanned="lastScanned"
                     :selectedLocation="state.data.selected_location"
                     :currentLocation="state.data.selected_location"
-                    :lastPickedLine="lastPickedLine"
+                    :lastPickedLines="lastPickedLines || []"
                     />
         </Screen>
         `,
@@ -52,13 +52,14 @@ const StockBatchTransfer = {
     },
     beforeUnmount() {
         this.lastScanned = null;
+        this.lastPickedLines = null;
     },
     data: function() {
         return {
             usage: "stock_batch_transfer",
             initial_state_key: "start",
             lastScanned: null,
-            lastPickedLine: null,
+            lastPickedLines: null,
             states: {
                 start: {
                     display_info: {
@@ -121,12 +122,13 @@ const StockBatchTransfer = {
                                                 .currentSourceLocation,
                                             dest_location_id: this.currentDestLocation,
                                         }),
-                                        ({message}) => {
+                                        ({message, data}) => {
                                             if (
                                                 message &&
                                                 message.message_type === "success"
                                             ) {
                                                 this.lastScanned = null;
+                                                this.lastPickedLines = data.scan_products.move_lines_done;
                                             }
                                         }
                                     );

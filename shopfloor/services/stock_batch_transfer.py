@@ -42,6 +42,7 @@ class StockBatchTransfer(Component):
             ("picking_id.picking_type_id", "in", self.picking_types.ids),
             ("picking_id.state", "=", "assigned"),
             ("location_id.id", "=", location_id),
+            ("product_uom_qty", ">", 0),
         ]
 
     def _get_data_for_scan_products(
@@ -89,20 +90,14 @@ class StockBatchTransfer(Component):
         current_source_location_id=None,
         selected_location_id=None,
         selected_product_barcode=None,
+        move_lines_done=None,
     ):
-        move_lines = [
-            line for line in all_move_lines if not line.shopfloor_checkout_done
-        ]
-        move_lines_done = [
-            line for line in all_move_lines if line.shopfloor_checkout_done
-        ]
-
         return {
-            "move_lines": self.data.move_lines(move_lines, with_picking=True),
-            "move_lines_done": self.data.move_lines(move_lines_done, with_picking=True),
+            "move_lines": self.data.move_lines(all_move_lines, with_picking=True),
             "id": current_source_location_id,
             "selected_location": selected_location_id,
             "selected_product": selected_product_barcode,
+            "move_lines_done": move_lines_done,
         }
 
     def _create_response_for_scan_products(
@@ -112,12 +107,27 @@ class StockBatchTransfer(Component):
         selected_location_id=None,
         selected_product_barcode=None,
         message=None,
+        move_lines_done=None,
     ):
+        if all([line.shopfloor_checkout_done for line in all_move_lines]):
+            domain = self._location_search_domain()
+            records = self.env["stock.location"].search(domain)
+            data = self.data_detail.locations_detail(records)
+            return self._response(
+                next_state="start",
+                data={"input_locations": data},
+                message={
+                    "message_type": "success",
+                    "body": _("Transfer completed"),
+                }
+            )
+
         data = self._create_data_for_scan_products(
             all_move_lines,
             current_source_location_id,
             selected_location_id,
             selected_product_barcode,
+            move_lines_done,
         )
 
         return self._response(next_state="scan_products", data=data, message=message,)
@@ -126,10 +136,25 @@ class StockBatchTransfer(Component):
         domain = self._location_search_domain()
         records = self.env["stock.location"].search(domain)
         data = self.data_detail.locations_detail(records)
+
+        print(data)
+        data = [location for location in data if not all(
+            [
+                line.shopfloor_checkout_done for line in
+                    self.env["stock.move.line"].search(
+                        self._move_lines_search_domain(location["id"])
+                    )
+            ])
+        ]
         return self._response(next_state="start", data={"input_locations": data})
 
     def _set_product_move_line_quantity(
-        self, current_source_location, product_move_lines, qty,
+        self,
+        current_source_location,
+        product_move_lines,
+        qty,
+        move_lines_children=None,
+        dest_location_id=None,
     ):
         quantity_to_add = qty
         move_line_index = 0
@@ -148,7 +173,9 @@ class StockBatchTransfer(Component):
 
         if quantity_to_add > 0:
             move_lines_data = self._create_data_for_scan_products(
-                current_source_location
+                move_lines_children,
+                current_source_location.id,
+                selected_location_id=dest_location_id,
             )
             raise OperationNotFoundError(
                 state="scan_products", data=move_lines_data,
@@ -165,26 +192,30 @@ class StockBatchTransfer(Component):
         self, product_move_lines, destination,
     ):
         quantity_stored = 0
+        lines_done = []
 
         for line in product_move_lines:
             quantity_stored += line.qty_done
             if line.qty_done == line.product_uom_qty:
                 line.write({"location_dest_id": destination.id})
+                if not line.shopfloor_checkout_done:
+                    lines_done += [line.id]
                 line.shopfloor_checkout_done = True
             elif line.qty_done < line.product_uom_qty:
-                new_line, qty_check = line._split_qty_to_be_done(line.qty_done)
+                line._split_qty_to_be_done(line.qty_done)
 
                 line.write({"location_dest_id": destination.id})
+                lines_done += [line.id]
                 line.shopfloor_checkout_done = True
 
-        return {
+        return ({
             "message_type": "success",
             "body": _("{} {} put in {}").format(
                 quantity_stored,
                 product_move_lines[0].product_id.name,
                 destination.name,
             ),
-        }
+        }, lines_done)
 
     @response_decorator
     def scan_location(self, barcode):
@@ -272,7 +303,11 @@ class StockBatchTransfer(Component):
             )
 
         self._set_product_move_line_quantity(
-            current_source_location, product_move_lines, 1
+            current_source_location,
+            product_move_lines,
+            1,
+            move_lines_children=move_lines_children,
+            dest_location_id=dest_location.id,
         )
 
         return self._create_response_for_scan_products(
@@ -312,7 +347,9 @@ class StockBatchTransfer(Component):
             )
 
         self._set_product_move_line_quantity(
-            current_source_location, product_move_lines, qty
+            current_source_location, product_move_lines, qty,
+            move_lines_children=move_lines_children,
+            dest_location_id=dest_location.id,
         )
 
         return self._create_response_for_scan_products(
@@ -348,6 +385,7 @@ class StockBatchTransfer(Component):
             )
 
         message = None
+        move_lines_done = None
 
         if barcode_location.id == current_source_location.id:
             self._reset_product_quantity(product_move_lines)
@@ -356,12 +394,22 @@ class StockBatchTransfer(Component):
                 "body": "Product succesfully put back in source location",
             }
         else:
-            message = self._put_move_lines_in_destination(
+            message, move_lines_done = self._put_move_lines_in_destination(
                 product_move_lines, barcode_location
             )
 
+        (
+            _,
+            new_move_lines_children,
+            _,
+            _,
+            _,
+        ) = self._get_data_for_scan_products(
+            current_source_location_id,
+        )
+
         return self._create_response_for_scan_products(
-            move_lines_children, current_source_location.id, message=message,
+            new_move_lines_children, current_source_location.id, message=message, move_lines_done=move_lines_done,
         )
 
 
@@ -458,9 +506,6 @@ class ShopfloorStockBatchTransferValidatorResponse(Component):
             "move_lines": self.schemas._schema_list_of(
                 self.schemas.move_line(with_packaging=True, with_picking=True)
             ),
-            "move_lines_done": self.schemas._schema_list_of(
-                self.schemas.move_line(with_packaging=True, with_picking=True)
-            ),
             "id": {"required": True, "type": "integer"},
             "selected_location": {
                 "required": False,
@@ -468,6 +513,11 @@ class ShopfloorStockBatchTransferValidatorResponse(Component):
                 "nullable": True,
             },
             "selected_product": {"required": False, "type": "string", "nullable": True},
+            "move_lines_done": {
+                "type": "list",
+                "nullable": True,
+                "schema": {"type": "integer"},
+            },
         }
 
     def list_input_location(self):

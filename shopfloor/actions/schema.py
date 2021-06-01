@@ -25,6 +25,7 @@ class ShopfloorSchemaAction(Component):
             "id": {"type": "integer", "required": True},
             "qty_done": {"type": "float", "required": True},
             "quantity": {"type": "float", "required": True},
+            "done": {"type": "boolean", "required": False},
             "product": self._schema_dict_of(self.product()),
             "lot": {
                 "type": "dict",

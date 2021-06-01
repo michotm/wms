@@ -10,12 +10,12 @@ Vue.component("batch-product-by-dest", {
         "fields",
         "lastScanned",
         "selectedLocation",
-        "lastPickedLine",
+        "lastPickedLines",
         "currentLocation",
     ],
     methods: {
         isLastScanned(product) {
-            return product && product.barcode === this.lastScanned;
+            return this.lastScanned && product && product.barcode === this.lastScanned;
         },
     },
     computed: {
@@ -37,13 +37,13 @@ Vue.component("batch-product-by-dest", {
                 })
                 .filter(
                     line =>
-                        line.qty > 0 && !(line.done && line.id !== this.lastPickedLine)
+                        line.qty > 0 && !(line.done && this.lastPickedLines.indexOf(line.id) === -1)
                 )
                 .sort((a, b) => (a.done ? 1 : -1));
 
             const linesByProduct = Object.values(
                 lines.reduce((acc, line) => {
-                    (acc[line.productId] = acc[line.productId] || []).push(line);
+                    (acc[line.productId + line.done] = acc[line.productId + line.done] || []).push(line);
                     return acc;
                 }, {})
             ).map(prodLines => {

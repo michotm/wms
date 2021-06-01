@@ -165,6 +165,7 @@ class DataAction(Component):
             "id",
             "qty_done",
             "product_uom_qty:quantity",
+            "shopfloor_checkout_done:done",
             ("product_id:product", self._product_parser),
             ("lot_id:lot", self._lot_parser),
             ("location_id:location_src", self._location_parser),
