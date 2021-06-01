@@ -19,6 +19,11 @@ const StockBatchTransfer = {
                 v-on:found="on_scan"
                 :input_placeholder="search_input_placeholder"
                 />
+                <div
+                v-if="state_is('start') && (state.data.input_locations.length === 0)"
+                >
+                    There is no transfer to process
+                </div>
                 <detail-simple-location
                     @click="state.on_scan({text: location.barcode})"
                     v-if="state_is('start')"
