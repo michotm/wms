@@ -554,6 +554,15 @@ class ClusterBatchPicking(Component):
                 data=self._create_data_for_scan_products(move_lines, batch,),
             )
 
+        if location_dest:
+            if not location_dest.is_sublocation_of(
+                move_line.picking_id.location_dest_id
+            ) or location_dest.id == move_line.picking_id.location_dest_id.id:
+                raise DestLocationNotAllowed(
+                    state="scan_products",
+                    data=self._create_data_for_scan_products(move_lines, batch,),
+                )
+
         new_line, qty_check = move_line._split_qty_to_be_done(qty)
 
         if qty_check == "greater":
@@ -564,14 +573,6 @@ class ClusterBatchPicking(Component):
             )
 
         if location_dest:
-            if not location_dest.is_sublocation_of(
-                move_line.picking_id.location_dest_id
-            ):
-                raise DestLocationNotAllowed(
-                    state="scan_products",
-                    data=self._create_data_for_scan_products(move_lines, batch,),
-                )
-
             move_line.write({"qty_done": qty, "location_dest_id": location_dest.id})
             move_line.shopfloor_checkout_done = True
 
