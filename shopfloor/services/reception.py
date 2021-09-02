@@ -455,13 +455,13 @@ class Reception(Component):
         stock = self._actions_for("stock")
         stock.validate_moves(product_move_lines.mapped("move_id"))
 
-        # for line in product_move_lines:
-        #    picking = line.picking_id
+        for line in product_move_lines:
+           picking = line.picking_id
 
-        #    if picking.state == "done":
-        #        continue
+           if picking.state == "done":
+               continue
 
-        #    picking.action_done()
+           picking._action_done()
 
         return self._response_for_start()
 
