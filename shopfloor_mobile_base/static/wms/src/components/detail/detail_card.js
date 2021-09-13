@@ -8,7 +8,7 @@ import {ItemDetailMixin} from "/shopfloor_mobile_base/static/wms/src/components/
 
 Vue.component("item-detail-card", {
     mixins: [ItemDetailMixin],
-    props: ["card_color", "outlined"],
+    props: ["card_color", "outlined", "small"],
     template: `
     <div :class="wrapper_klass">
         <v-card
@@ -33,7 +33,7 @@ Vue.component("item-detail-card", {
             <v-card-subtitle v-if="$slots.subtitle">
                 <slot name="subtitle"></slot>
             </v-card-subtitle>
-            <slot name="details">
+            <slot name="details" v-if="!small">
                 <!-- TODO: this loop is the same in list-item => make it a component -->
                 <v-card-text class="details" v-if="opts.fields.length">
                     <div v-for="(field, index) in opts.fields" :class="'field-detail ' + field.path.replace('.', '-') + ' ' + (field.klass || '')">
