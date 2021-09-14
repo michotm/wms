@@ -336,5 +336,5 @@ class DataAction(Component):
             "product_qty",
             "theoretical_qty",
             ("product_id:product", self._product_parser),
-            ("location_id:location", self._location_parser),
+            ("location_id:location", self._location_detail_parser),
         ]
