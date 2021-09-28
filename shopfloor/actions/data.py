@@ -174,6 +174,12 @@ class DataAction(Component):
                 "move_id:priority",
                 lambda rec, fname: rec.move_id.priority or "",
             ),
+            (
+                "result_package_id:package_dest",
+                lambda rec, fname: self.package(
+                    rec.result_package_id, rec.picking_id, with_packaging=True
+                ),
+            ),
         ]
 
     @ensure_model("stock.package_level")
@@ -280,4 +286,29 @@ class DataAction(Component):
         return [
             "id",
             "name",
+        ]
+
+    def purchase_order(self, record, **kw):
+        parser = self._purchase_order_parser
+        data = self._jsonify(record, parser, **kw)
+
+        if data:
+            for order in data:
+                order.update({"order_line_count": len(order["order_line"])})
+                order.pop("order_line")
+
+        return data
+
+    def purchase_orders(self, record, **kw):
+        return self.purchase_order(record, multi=True)
+
+    @property
+    def _purchase_order_parser(self):
+        return [
+            "id",
+            "name",
+            "date_order",
+            "date_planned",
+            ("partner_id:partner", self._partner_parser),
+            "order_line",
         ]
