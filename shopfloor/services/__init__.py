@@ -15,6 +15,7 @@ from . import delivery
 from . import location_content_transfer
 from . import single_pack_transfer
 from . import reception
+from . import inventory
 
 # forms
 from . import forms

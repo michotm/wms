@@ -209,3 +209,12 @@ class ShopfloorSchemaAction(Component):
             "date_order": {"type": "string", "nullable": True, "required": True},
             "date_planned": {"type": "string", "nullable": True, "required": True},
         }
+
+    def inventory(self):
+        return {
+            "id": {"required": True, "type": "integer"},
+            "name": {"required": True, "type": "string"},
+            "date": {"required": True, "type": "string"},
+            "locations": self._schema_list_of(self.location()),
+            "products": self._schema_list_of(self.product()),
+        }
