@@ -16,6 +16,7 @@ class CommonCase(BaseCommonCase):
         cls.stock_location = stock_location
         cls.customer_location = cls.env.ref("stock.stock_location_customers")
         cls.dispatch_location = cls.env.ref("stock.location_dispatch_zone")
+        cls.packing_sublocation = cls.env.ref("shopfloor.location_pack_zone_a")
         cls.packing_location = cls.env.ref("stock.location_pack_zone")
         cls.input_location = cls.env.ref("stock.stock_location_company")
         cls.shelf1 = cls.env.ref("stock.stock_location_components")

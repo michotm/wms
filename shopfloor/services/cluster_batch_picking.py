@@ -928,7 +928,7 @@ class ShopfloorClusterPickingValidatorResponse(Component):
         }
 
     def find_batch(self):
-        return self._response_schema(next_states={"confirm_start"})
+        return self._response_schema(next_states={"confirm_start", "start"})
 
     def set_quantity(self):
         return self._response_schema(next_states={"scan_products"})

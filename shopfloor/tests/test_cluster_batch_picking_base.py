@@ -1,4 +1,4 @@
-# Copyright 2020 Camptocamp SA (http://www.camptocamp.com)
+# Copyright 2020 Akretion (http://www.akretion.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 from .common import CommonCase, PickingBatchMixin
@@ -28,8 +28,6 @@ class ClusterBatchPickingCommonCase(CommonCase, PickingBatchMixin):
         # A package exists on the move line, because the quant created
         # by ``_simulate_batch_selected`` has a package.
         data = self.data.move_line(move_line)
-        if not package_dest:
-            data["package_dest"] = None
         if qty:
             data["quantity"] = qty
         data.update(
@@ -41,22 +39,19 @@ class ClusterBatchPickingCommonCase(CommonCase, PickingBatchMixin):
         return data
 
     @classmethod
-    def _set_dest_package_and_done(cls, move_lines, dest_package):
+    def _set_done(cls, move_lines):
         """Simulate what would have been done in the previous steps"""
         for line in move_lines:
             line.write(
                 {"qty_done": line.product_uom_qty}
             )
 
-    def _data_for_batch(self, batch, location, pack=None):
-        data = self.data.picking_batch(batch)
-        data["location_dest"] = self.data.location(location)
-        if pack:
-            data["package"] = self.data.package(pack)
+    def _data_for_batch(self, batch):
+        data = self.data.picking_batch(batch, with_pickings=True)
         return data
 
 
-class ClusterPickingLineCommonCase(ClusterPickingCommonCase):
+class ClusterBatchPickingLineCommonCase(ClusterBatchPickingCommonCase):
     @classmethod
     def setUpClassBaseData(cls, *args, **kwargs):
         super().setUpClassBaseData(*args, **kwargs)

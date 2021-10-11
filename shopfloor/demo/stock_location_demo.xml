@@ -1,0 +1,7 @@
+<odoo noupdate="1">
+    <record id="location_pack_zone_a" model="stock.location">
+        <field name="name">location pack A</field>
+        <field name="usage">internal</field>
+        <field name="location_id" ref="stock.location_pack_zone"/>
+    </record>
+</odoo>
