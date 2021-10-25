@@ -269,6 +269,25 @@ class StockBatchTransfer(Component):
         search = self._actions_for("search")
         location = search.location_from_scan(barcode)
 
+        if not location:
+            domain = self._location_search_domain()
+            records = self.env["stock.location"].search(domain)
+            data = self.data_detail.locations_detail(records)
+
+            data = [
+                location
+                for location in data
+                if not all(
+                    [
+                        line.shopfloor_checkout_done
+                        for line in self.env["stock.move.line"].search(
+                            self._move_lines_search_domain(location["id"])
+                        )
+                    ]
+                )
+            ]
+            raise LocationNotFound("start", data={"input_locations": data})
+
         move_lines_children = self.env["stock.move.line"].search(
             self._move_lines_search_domain(location.id)
         )
