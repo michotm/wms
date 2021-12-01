@@ -244,7 +244,7 @@ class CheckoutScanAndPack(Component):
         # just pick the first one that hasn't a quantity done equal to
         # it's target quantity
         move_lines = picking.move_line_ids.filtered(
-            lambda l: l.product_id.barcode == barcode and not l.shopfloor_checkout_done
+            lambda l: ((l.product_id.barcode == barcode) or (barcode in [barcode.name for barcode in l.product_id.mapped("barcode_ids")])) and not l.shopfloor_checkout_done
         )
 
         if len(move_lines) > 0:
