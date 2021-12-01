@@ -279,7 +279,7 @@ class Reception(Component):
             ("picking_id.state", "=", "assigned"),
             ("picking_id.picking_type_id", "in", self.picking_types.ids),
             ("picking_id.partner_id", "=", partner_id),
-            ("product_id.barcode", "=", barcode),
+            ("product_id.barcode_ids.name", "=", barcode),
             ("shopfloor_checkout_done", "!=", True),
             ("state", "not in", ("cancel", "done")),
         ]
