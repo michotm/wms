@@ -15,10 +15,10 @@ Vue.component("batch-move-line", {
         "currentLocation",
     ],
     methods: {
-        isLastScanned(product) {
+        isLastScanned(moveLineProduct) {
             return (
-                product &&
-                product.id === this.lastMoveLineId
+                moveLineProduct &&
+                moveLineProduct.id === this.lastMoveLineId
             );
         },
         getLineDest(line) {
