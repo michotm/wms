@@ -9,6 +9,7 @@ Vue.component("batch-move-line", {
         "moveLines",
         "fields",
         "lastScanned",
+        "lastMoveLineId",
         "selectedLocation",
         "lastPickedLine",
         "currentLocation",
@@ -17,8 +18,7 @@ Vue.component("batch-move-line", {
         isLastScanned(product) {
             return (
                 product &&
-                (product.barcode === this.lastScanned ||
-                    product.barcodes.includes(this.lastScanned))
+                product.id === this.lastMoveLineId
             );
         },
         getLineDest(line) {

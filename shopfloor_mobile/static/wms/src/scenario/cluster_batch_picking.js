@@ -36,6 +36,7 @@ const ClusterBatchPicking = {
                 :moveLines="state.data.move_lines"
                 :fields="state.fields"
                 :lastScanned="lastScanned"
+                :lastMoveLineId="lastMoveLineId"
                 :selectedLocation="selectedLocation"
                 :currentLocation="currentLocation"
                 :lastPickedLine="lastPickedLine"
@@ -188,6 +189,7 @@ const ClusterBatchPicking = {
                                 result.message.message_type !== "error"
                             ) {
                                 this.lastScanned = scanned.text;
+                                this.lastMoveLineId = move_line.id;
                             }
                         }
                     },
@@ -208,6 +210,7 @@ const ClusterBatchPicking = {
                                 result.message.message_type !== "error"
                             ) {
                                 this.lastScanned = scanned.text;
+                                this.lastMoveLineId = move_line.id;
                             }
                         }
                     },
@@ -244,6 +247,7 @@ const ClusterBatchPicking = {
                     );
 
                     this.lastScanned = null;
+                    this.lastMoveLineId = null;
                     this.selectedLocation = null;
                 } else if (
                     !isNaN(intInText) &&
@@ -275,6 +279,7 @@ const ClusterBatchPicking = {
                                     result.message.message_type === "success"
                                 ) {
                                     this.lastScanned = null;
+                                    this.lastMoveLineId = null;
                                     this.selectedLocation = null;
                                     this.lastPickedLine = last_move_line.id;
                                 }
@@ -299,6 +304,7 @@ const ClusterBatchPicking = {
             scan_destination_qty: 0,
             currentLocation: null,
             lastPickedLine: null,
+            lastMoveLineId: null,
             states: {
                 start: {
                     on_get_work: evt => {
@@ -430,6 +436,7 @@ const ClusterBatchPicking = {
                             })
                         );
                         this.lastScanned = null;
+                        this.lastMoveLineId = null;
                     },
                     shipUnfinished: () => {
                         this.wait_call(
@@ -438,9 +445,11 @@ const ClusterBatchPicking = {
                             })
                         );
                         this.lastScanned = null;
+                        this.lastMoveLineId = null;
                     },
                     skipPack: () => {
                         this.lastScanned = null;
+                        this.lastMoveLineId = null;
                         this.state_to("select_document", {
                             skip: parseInt(this.$route.query.skip || 0) + 1,
                         });
@@ -466,6 +475,7 @@ const ClusterBatchPicking = {
                     ],
                     exit: () => {
                         this.lastScanned = null;
+                        this.lastMoveLineId = null;
                         this.lastPickedLine = null;
                         this.currentLocation = null;
                         this.selectedLocation = null;
