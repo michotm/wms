@@ -109,6 +109,7 @@ main.v-main > .v-main__wrap > .header .container {
     font-size: 1.3em;
     line-height: 1.4em;
 }
+
 .v-card.loud-labels .label,
 .detail.item-detail-card .field-detail.loud-label .label,
 .detail.item-detail-card.loud-labels .v-card__text.details .label,
@@ -118,6 +119,11 @@ main.v-main > .v-main__wrap > .header .container {
 .field-detail.loud {
     font-weight: bold;
 }
+.field-detail.extra-loud {
+    font-size: 1.35em;
+    font-weight: 800;
+}
+
 .button-vertical-list.full .v-btn {
     width: 90%;
     height: 5rem;
