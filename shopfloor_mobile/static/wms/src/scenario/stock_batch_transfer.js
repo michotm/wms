@@ -225,11 +225,11 @@ const StockBatchTransfer = {
                         }
                     },
                     fields: [
-                        {path: "supplierCode", label: "Vendor code", klass: "loud"},
+                        {path: "dest.name", label: "Should be put in", klass: "extra-loud"},
+                        {path: "picking_dest.name", label: "Picking destination"},
                         {path: "qty", label: "Quantity"},
                         {path: "qtyDone", label: "Done"},
-                        {path: "picking_dest.name", label: "Picking destination"},
-                        {path: "dest.name", label: "Should be put in"},
+                        {path: "supplierCode", label: "Vendor code"},
                     ],
                 },
             },
