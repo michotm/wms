@@ -5,16 +5,23 @@
  */
 
 Vue.component("contact-list", {
-    props: ["contacts", "fields"],
+    props: ["contacts", "fields", "searchPartnerString"],
     template: `
         <div>
             <contact-detail
                 v-on="$listeners"
                 :fields="fields"
                 :contact="contact"
-                v-for="contact in contacts"
+                v-for="contact in filteredContacts"
                 :key="contact.id"
                 />
         </div>
     `,
+    computed: {
+        filteredContacts: function() {
+            return this.contacts.filter((contact) =>
+                this.searchPartnerString === "" || contact.name.includes(this.searchPartnerString)
+            );
+        },
+    },
 });

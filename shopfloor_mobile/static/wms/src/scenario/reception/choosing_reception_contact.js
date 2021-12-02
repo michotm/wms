@@ -10,10 +10,12 @@ Vue.component("choosing-reception-contact", {
         <div>
             <searchbar
                 :input_placeholder="scan_placeholder"
+                v-on:found="searchPartner"
             />
             <contact-list
                 v-if="partners && partners.length > 0"
                 v-on="$listeners"
+                :searchPartnerString="searchPartnerString"
                 :fields="fields"
                 :contacts="partners"
                 />
@@ -24,7 +26,13 @@ Vue.component("choosing-reception-contact", {
             </div>
         </div>
     `,
+    methods: {
+        searchPartner: function({text}) {
+            this.searchPartnerString = text;
+        },
+    },
     data: () => ({
-        scan_placeholder: "Scan contact / receipt / product",
+        searchPartnerString: "",
+        scan_placeholder: "Search contact",
     }),
 });
