@@ -401,6 +401,17 @@ class ClusterBatchPicking(Component):
     def _response_batch_does_not_exist(self):
         return self._response_for_start(message=self.msg_store.record_not_found())
 
+    def unassign(self, picking_batch_id):
+        """Unassign and reset to draft a started picking batch
+
+        Transitions:
+        * "start" to work on a new batch
+        """
+        batch = self.env["stock.picking.batch"].browse(picking_batch_id)
+        if batch.exists():
+            batch.write({"state": "draft", "user_id": False})
+        return self._response_for_start()
+
     @response_decorator
     def find_batch(self):
         """Find a picking batch to work on and start it
@@ -846,6 +857,11 @@ class ShopfloorClusterBatchPickingValidator(Component):
             "picking_batch_id": {"coerce": to_int, "required": True, "type": "integer"}
         }
 
+    def unassign(self):
+        return {
+            "picking_batch_id": {"coerce": to_int, "required": True, "type": "integer"}
+        }
+
     def set_quantity(self):
         return {
             "barcode": {"required": True, "type": "string"},
@@ -955,6 +971,9 @@ class ShopfloorClusterPickingValidatorResponse(Component):
                 "scan_products",
             }
         )
+
+    def unassign(self):
+        return self._response_schema(next_states={"start"})
 
     def prepare_unload(self):
         return self._response_schema(
