@@ -108,7 +108,11 @@ const StockBatchTransfer = {
 
                         if (this.currentDestLocation) {
                             if (this.lastScanned.length > 0) {
-                                if (intInText !== false) {
+                                if (
+                                    !isNaN(intInText) &&
+                                    intInText > 0 &&
+                                    intInText < 100000
+                                ) {
                                     this.wait_call(
                                         this.odoo.call("set_product_qty", {
                                             barcode: this.lastScanned[0],
