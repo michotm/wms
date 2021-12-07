@@ -98,7 +98,7 @@ const CheckoutScanAndPack = {
                         const intInText = parseInt(scanned.text);
                         if (
                             !isNaN(intInText) &&
-                            intInText < 10000 &&
+                            intInText < 100000 &&
                             this.lastScanned
                         ) {
                             const moveLinesSelected = this.state.data.picking.move_lines.filter(
