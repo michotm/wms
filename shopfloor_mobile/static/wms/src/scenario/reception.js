@@ -226,7 +226,7 @@ const Reception = {
                             } else if (
                                 !isNaN(intInText) &&
                                 intInText > 0 &&
-                                intInText < 10000
+                                intInText < 100000
                             ) {
                                 this.wait_call(
                                     this.odoo.call("set_quantity", {
