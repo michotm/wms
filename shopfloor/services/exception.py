@@ -29,8 +29,9 @@ class MessageBasedError(StateBasedError):
         self.message_dict = message
 
 
-class BatchDoesNotExistError(Exception):
-    pass
+class BatchDoesNotExistError(MessageNameBasedError):
+    def __init(self, state, data):
+        super().__init__(state, data, message_name="record_not_found")
 
 
 class OperationNotFoundError(MessageNameBasedError):

@@ -398,9 +398,6 @@ class ClusterBatchPicking(Component):
             message=message,
         )
 
-    def _response_batch_does_not_exist(self):
-        return self._response_for_start(message=self.msg_store.record_not_found())
-
     def unassign(self, picking_batch_id):
         """Unassign and reset to draft a started picking batch
 
@@ -622,7 +619,7 @@ class ClusterBatchPicking(Component):
         """
         batch = self.env["stock.picking.batch"].browse(picking_batch_id)
         if not batch.exists():
-            return self._response_batch_does_not_exist()
+            raise BatchDoesNotExistError("start", None)
         if self._are_all_dest_location_same(batch):
             return self._response_for_unload_all(batch)
         else:
@@ -709,7 +706,7 @@ class ClusterBatchPicking(Component):
         """
         batch = self.env["stock.picking.batch"].browse(picking_batch_id)
         if not batch.exists():
-            raise BatchDoesNotExistError
+            raise BatchDoesNotExistError("start", None)
 
         # In case /set_destination_all was called and the destinations were
         # in fact no the same... restart the unloading step over
