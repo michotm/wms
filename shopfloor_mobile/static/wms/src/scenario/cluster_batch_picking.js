@@ -12,7 +12,7 @@ const ClusterBatchPicking = {
                 v-if="state.on_scan"
                 v-on:found="on_scan"
                 :input_placeholder="search_input_placeholder"
-                :refocusInput="true"
+                :refocusInput="true && !this.stockOutMoveLineId"
                 />
             <get-work
                 v-if="state_is('start')"
@@ -40,13 +40,51 @@ const ClusterBatchPicking = {
                 :selectedLocation="selectedLocation"
                 :currentLocation="currentLocation"
                 :lastPickedLine="lastPickedLine"
-                @action="state.actionStockOut"
+                @action="state.performMoveLineAction"
                 />
             <batch-picking-line-actions
                 v-if="state_is('start_line')"
                 v-on:action="state.on_action"
                 :line="state_get_data('start_line')"
                 />
+            <div v-if="state_is('scan_products') && stockOutMoveLineId">
+                <v-dialog v-model="stockOutMoveLineId" max-width="400">
+                    <v-card>
+                        <v-card-title class="red lighten-4">
+                            Warning
+                        </v-card-title>
+                        <v-card-text>
+                            <v-container>
+                                <v-row>
+                                    <v-col>
+                                    You have some product currently in loading.<br/>
+                                    Please scan a location where to place those product before declaring a stock out.
+                                    </v-col>
+                                </v-row>
+                                <v-row>
+                                    <v-col>
+                                    <searchbar
+                                        v-on:found="state.put_int_location_stock_out"
+                                        input_placeholder="Scan a location"
+                                        :refocusInput="this.stockOutMoveLineId"
+                                        />
+                                    </v-col>
+                                </v-row>
+                            </v-container>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                              <v-btn
+                                color="primary"
+                                text
+                                @click="stockOutMoveLineId = null"
+                              >
+                                Cancel
+                              </v-btn>
+                        <v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </div>
             <div v-if="state_is('scan_destination')">
                 <div class="button-list button-vertical-list full mt-10">
                     <v-row align="center">
@@ -58,16 +96,6 @@ const ClusterBatchPicking = {
                     </v-row>
                 </div>
             </div>
-            <stock-zero-check
-                v-if="state_is('zero_check')"
-                v-on:action="state.on_action"
-                />
-
-            <line-stock-out
-                v-if="state_is('stock_issue')"
-                v-on:confirm_stock_issue="state.on_confirm_stock_issue"
-                />
-
             <div v-if="state_is('manual_selection')">
                 <manual-select
                     v-on:select="state.on_select"
@@ -147,17 +175,8 @@ const ClusterBatchPicking = {
                 })
             );
         },
-        find_move_line: function(move_lines, barcode, filter = () => true) {
-            let move_line;
-
-            move_lines.filter(filter).forEach(line => {
-                if (
-                    line.product.barcode === barcode ||
-                    line.product.barcodes.findIndex(b => b.name === barcode) != -1
-                ) {
-                    move_line = move_line !== undefined ? move_line : line;
-                }
-            });
+        find_move_line: function(move_lines, find = () => true, filter = () => true) {
+            const move_line = move_lines.filter(filter).find(find);
 
             return move_line || {};
         },
@@ -305,6 +324,7 @@ const ClusterBatchPicking = {
             currentLocation: null,
             lastPickedLine: null,
             lastMoveLineId: null,
+            stockOutMoveLineId: null,
             states: {
                 start: {
                     on_get_work: evt => {
@@ -350,14 +370,35 @@ const ClusterBatchPicking = {
                     },
                 },
                 scan_products: {
-                    actionStockOut: ({move_line_id, event_name}) => {
+                    setMoveLineStockOut: () => {
+                        this.wait_call(
+                            this.odoo.call("stock_issue", {
+                                move_line_id: this.stockOutMoveLineId,
+                                picking_batch_id: this.state.data.id,
+                            })
+                        );
+                    },
+                    performMoveLineAction: ({move_line_id, event_name}) => {
                         if (event_name === "actionStockOut") {
-                            this.wait_call(
-                                this.odoo.call("stock_issue", {
-                                    move_line_id,
-                                    picking_batch_id: this.state.data.id,
-                                })
+                            const selectedMoveLine = this.find_move_line(
+                                this.state.data.move_lines,
+                                (line) => line.id === move_line_id,
+                                (line) => line.qty_done > 0
                             );
+
+                            if (selectedMoveLine !== {})
+                            {
+                                this.stockOutMoveLineId = move_line_id;
+                            }
+                            else
+                            {
+                                this.wait_call(
+                                    this.odoo.call("stock_issue", {
+                                        move_line_id: move_line_id,
+                                        picking_batch_id: this.state.data.id,
+                                    })
+                                );
+                            }
                         } else if (event_name === "cancelLine") {
                             this.wait_call(
                                 this.odoo.call("cancel_line", {
@@ -367,18 +408,48 @@ const ClusterBatchPicking = {
                             );
                         }
                     },
+                    put_int_location_stock_out: scanned => {
+                        const selectedMoveLine = this.find_move_line(
+                            this.state.data.move_lines,
+                            (line) => line.id === this.stockOutMoveLineId,
+                            (line) => line.qty_done > 0
+                        );
+
+                        this.wait_call(
+                            this.odoo.call("set_destination", {
+                                barcode: scanned.text,
+                                move_line_id: this.stockOutMoveLineId,
+                                picking_batch_id: this.state.data.id,
+                                qty: selectedMoveLine.qty_done,
+                            }),
+                            {
+                                callback: result => {
+                                    if (
+                                        result.message &&
+                                        result.message.message_type === "success"
+                                    ) {
+                                        this.lastScanned = null;
+                                        this.lastMoveLineId = null;
+                                        this.selectedLocation = null;
+                                        this.lastPickedLine = this.stockOutMoveLineId;
+                                        this.stockOutMoveLineId = null;
+                                    }
+                                }
+                            },
+                        );
+                    },
                     on_scan: scanned => {
                         const intInText =
                             "" + scanned.text == parseInt(scanned.text, 10) &&
                             parseInt(scanned.text, 10);
                         let move_line = this.find_move_line(
                             this.state.data.move_lines,
-                            scanned.text,
+                            line => line.product.barcode === scanned.text || line.product.barcodes.findIndex(b => b.name === scanned.text) !== -1,
                             line => !line.done
                         );
                         let last_move_line = this.find_move_line(
                             this.state.data.move_lines,
-                            this.lastScanned,
+                            line => line.product.barcode === this.lastScanned || line.product.barcodes.findIndex(b => b.name === this.lastScanned) !== -1,
                             line => !line.done
                         );
 

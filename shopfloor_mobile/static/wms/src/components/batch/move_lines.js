@@ -107,7 +107,6 @@ Vue.component("batch-move-line", {
                             :line="product"
                             :actions="[
                                 {name: 'Declare stock out', event_name: 'actionStockOut', move_line_id: product.id, condition: !product.done},
-                                {name: 'Change pack or lot', event_name: 'actionChangePack', condition: !product.done},
                                 {name: 'Cancel line', event_name: 'cancelLine', move_line_id: product.id, condition: product.done},
                             ]"
                             xxxkey="make_state_component_key(['line-actions', product.id])"
