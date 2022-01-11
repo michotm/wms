@@ -342,10 +342,18 @@ class CheckoutScanAndPack(Component):
         # ('You cannot move the same package content more than once in the same
         # transfer or split the same package into two location.', '')
         picking._action_done()
-        return self._response_for_select_document(
-            message=self.msg_store.transfer_done_success(picking)
-        )
+        # if there is more packing to be done from the current location we
+        # just go back to scan_products with the new picking
 
+        search = self._actions_for("search")
+        location_ids = [l.id for l in picking.move_line_ids.location_id]
+        next_picking = search.picking_from_start_locations(location_ids)
+        if not next_picking:
+            return self._response_for_select_document(
+                message=self.msg_store.transfer_done_success(picking)
+            )
+        else:
+            return self._create_response_for_scan_products(next_picking[0], message=self.msg_store.transfer_done_success(picking))
 
 class ShopfloorCheckoutScanAndPackValidator(Component):
     """Validators for the Checkout endpoints"""

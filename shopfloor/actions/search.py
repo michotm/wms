@@ -34,6 +34,13 @@ class SearchAction(Component):
             return model.browse()
         return model.search([("name", "=", barcode)], limit=1)
 
+    def picking_from_start_locations(self, location_ids):
+        model = self.env["stock.picking"]
+        return model.search(
+            [("move_line_ids.state", "not in", ("cancel", "done")), ("move_line_ids.location_id", "in", location_ids)],
+            order="scheduled_date asc, id asc"
+        )
+
     def product_from_scan(self, barcode):
         model = self.env["product.product"]
         if not barcode:
