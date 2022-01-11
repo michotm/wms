@@ -103,7 +103,7 @@ const CheckoutScanAndPack = {
                         ) {
                             const moveLinesSelected = this.state.data.picking.move_lines.filter(
                                 line =>
-                                    line.product.barcode === this.lastScanned &&
+                                    line.id === this.lastScanned &&
                                     !line.done
                             );
 
@@ -134,12 +134,12 @@ const CheckoutScanAndPack = {
                                     picking_id: this.state.data.picking.id,
                                 }),
                                 {
-                                    callback: ({message}) => {
+                                    callback: ({message, data}) => {
                                         if (
                                             !message ||
                                             message.message_type !== "error"
                                         ) {
-                                            this.lastScanned = scanned.text;
+                                            this.lastScanned = data.scan_products.move_line_id;
                                         }
                                     },
                                 }

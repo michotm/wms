@@ -386,7 +386,7 @@ const ClusterBatchPicking = {
                                 (line) => line.qty_done > 0
                             );
 
-                            if (selectedMoveLine !== {})
+                            if (selectedMoveLine.id)
                             {
                                 this.stockOutMoveLineId = move_line_id;
                             }

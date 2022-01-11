@@ -9,20 +9,12 @@ Vue.component("scan-products", {
     props: ["packing", "products", "fields", "lastScanned"],
     methods: {
         isLastScanned(product) {
-            return product && product.barcodes.includes(this.lastScanned);
+            return product && product.id === this.lastScanned;
         },
-    },
-    computed: {
-        all_lines_done: function() {
-            return this.products.every(prod => prod.done);
-        },
-        no_products: function() {
-            return this.products.every(prod => prod.qty_done === 0);
-        },
-        formatedProducts: function() {
-            return this.products
+        formatProduct(products) {
+            return products
                 .map(prod => ({
-                    id: prod.product.id,
+                    id: prod.id,
                     name: prod.product.display_name,
                     qty: prod.quantity,
                     qtyDone: prod.qty_done,
@@ -33,6 +25,31 @@ Vue.component("scan-products", {
                 .sort((a, b) => (a.done && !this.isLastScanned(a) ? 1 : -1));
         },
     },
+    computed: {
+        all_lines_done: function() {
+            return this.products.every(prod => prod.done);
+        },
+        no_products: function() {
+            return this.products.every(prod => prod.qty_done === 0);
+        },
+        formatedProducts: function() {
+            return this.formatProduct(this.products);
+        },
+        multipleLocation: function() {
+            return !this.products.every(p => p.location_src.id === this.products[0].location_src.id);
+        },
+        productByLocation: function() {
+            let locations = this.products.map(p => p.location_src);
+            locations = locations.filter((p, i) => locations.indexOf(p) === i);
+
+            locations.forEach((location) => {
+                location.products = this.formatProduct(this.products.filter(prod => prod.location_src.id === location.id));
+            });
+            locations.sort((a, b) => a.products.reduce((acc, p) => acc = p.id === this.lastScanned) ? 1 : -1);
+
+            return locations;
+        },
+    },
     template: `
     <v-container class="mb-16">
         <detail-picking
@@ -40,11 +57,25 @@ Vue.component("scan-products", {
         />
         <detail-simple-product
             v-for="product in formatedProducts"
+            v-if="!multipleLocation"
             :product="product"
             :fields="fields"
             :key="product.id"
             :selected="isLastScanned(product)"
             />
+        <div v-if="multipleLocation" v-for="location in productByLocation">
+            <item-detail-card
+                :record="location"
+                />
+            <detail-simple-product
+                v-for="product in location.products"
+                :product="product"
+                :fields="fields"
+                :key="product.id"
+                :selected="isLastScanned(product)"
+                />
+        </div>
+        </div>
         <div style="position: fixed; bottom: 0; right: 12px;width: 100%">
             <v-row>
                 <v-col

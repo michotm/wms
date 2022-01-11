@@ -70,11 +70,12 @@ class CheckoutScanAndPack(Component):
         return data
 
     def _create_response_for_scan_products(
-        self, picking, message=None, skip=None, confirm=False,
+        self, picking, move_line_id=None, message=None, skip=None, confirm=False,
     ):
         return self._response(
             next_state="scan_products",
             data={
+                "move_line_id": move_line_id,
                 "picking": self._create_data_for_scan_products(picking),
                 "skip": skip,
                 "confirm": confirm,
@@ -262,7 +263,7 @@ class CheckoutScanAndPack(Component):
 
         self._set_move_line_qty(move_line, quantity_to_set, picking)
 
-        return self._create_response_for_scan_products(picking, message)
+        return self._create_response_for_scan_products(picking, move_line_id=move_line.id, message=message)
 
     @response_decorator
     def set_quantity(self, picking_id, move_line_id, qty):
@@ -286,7 +287,7 @@ class CheckoutScanAndPack(Component):
 
         self._set_move_line_qty(move_line, qty, picking)
 
-        return self._create_response_for_scan_products(picking, message)
+        return self._create_response_for_scan_products(picking, move_line_id=move_line_id, message=message)
 
     @response_decorator
     def list_stock_picking(self):
@@ -421,6 +422,7 @@ class ShopfloorCheckoutScanAndPackValidatorResponse(Component):
             }
         )
         return {
+            "move_line_id": {"type": "integer", "nullable": True},
             "picking": self.schemas._schema_dict_of(schema, required=True),
             "skip": {"type": "integer", "nullable": True},
             "confirm": {"type": "boolean", "required": False, "nullable": True},
