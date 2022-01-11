@@ -193,7 +193,9 @@ class CheckoutScanAndPack(Component):
                     lambda ml: ml.state not in ("cancel", "done")
                 )
 
-                pickings = lines.mapped("picking_id")
+                pickings = lines.mapped("picking_id").filtered(
+                    lambda p: p.state == "assigned"
+                )
                 if pickings:
                     if skip >= len(pickings):
                         picking = pickings[-1]
