@@ -453,7 +453,7 @@ class Reception(Component):
             line.shopfloor_checkout_done = False
 
         stock = self._actions_for("stock")
-        stock.validate_moves(product_move_lines.mapped("move_id"))
+        stock.validate_moves(product_move_lines.picking_id.move_lines)
 
         for line in product_move_lines:
            picking = line.picking_id
