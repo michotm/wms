@@ -462,7 +462,6 @@ class Reception(Component):
                continue
 
            picking._action_done()
-
         return self._response_for_start()
 
 

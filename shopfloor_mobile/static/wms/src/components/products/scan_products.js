@@ -40,7 +40,7 @@ Vue.component("scan-products", {
         },
         productByLocation: function() {
             let locations = this.products.map(p => p.location_src);
-            locations = locations.filter((p, i) => locations.indexOf(p) === i);
+            locations = locations.filter((p, i) => locations.findIndex(loc => loc.id === p.id) === i);
 
             locations.forEach((location) => {
                 location.products = this.formatProduct(this.products.filter(prod => prod.location_src.id === location.id));
