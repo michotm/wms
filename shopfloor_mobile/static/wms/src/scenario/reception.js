@@ -14,7 +14,6 @@ const Reception = {
             <choosing-reception-contact
                 v-if="state_is('start')"
                 @select-contact="state.onSelectContact"
-                :searchPartner="searchPartner"
                 :partners="state.data.partners"
                 :fields="state.fields"
                 />
