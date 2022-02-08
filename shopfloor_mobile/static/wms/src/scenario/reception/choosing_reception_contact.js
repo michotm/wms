@@ -5,7 +5,7 @@
  */
 
 Vue.component("choosing-reception-contact", {
-    props: ["partners", "fields"],
+    props: ["partners", "fields", "searchPartner"],
     template: `
         <div>
             <searchbar
