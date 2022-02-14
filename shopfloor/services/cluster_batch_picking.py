@@ -141,13 +141,17 @@ class ClusterBatchPicking(Component):
                 "suggested_location_dest"
             ] = suggested_location_dest
 
+        # TODO we should discuss about this and do it better
+        # Indeed showing the whole list of product is long and costly
+        # so for now we limit to 10
+        dones = move_lines.filtered("shopfloor_checkout_done").sorted("write_date")
+        move_lines = move_lines - dones[0:-1]
         move_lines_data = self.data.move_lines(
-            move_lines.sorted(key=self._sort_key_lines), with_picking=True, with_packaging=True
+            move_lines.sorted(key=self._sort_key_lines)[0:11], with_picking=True, with_packaging=True
         )
         for line in move_lines_data:
             picking = line["picking"]
             line.update(picking_destination[picking["id"]])
-
         return {
             "move_lines": move_lines_data,
             "id": batch.id,
