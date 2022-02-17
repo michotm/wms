@@ -51,8 +51,6 @@ Vue.component("batch-move-line", {
                     line =>
                         line.qty > 0 && !(line.done && line.id !== this.lastPickedLine)
                 )
-                .sort((a, b) => (a.done ? 1 : -1));
-
             const selected = lines.find(this.isLastScanned) || {};
             selected.selected = true;
 
@@ -64,11 +62,16 @@ Vue.component("batch-move-line", {
 
             const sourceWithLines = sources
                 .map(source => {
+                    var source_lines = lines.filter(line => line.source.id === source.id);
+                    var selected_index = source_lines.findIndex(line => line.selected === true);
+                    if ( selected_index >= 0 ) {
+                        var line = source_lines.splice(selected_index, 1)[0];
+                        source_lines.unshift(line);
+                    };
+
                     return {
                         source,
-                        lines: lines
-                            .filter(line => line.source.id === source.id)
-                            .sort((a, b) => (!a.selected ? 1 : -1)),
+                        lines: source_lines
                     };
                 })
                 .filter(source => source.lines.length > 0)

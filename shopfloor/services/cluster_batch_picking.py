@@ -33,12 +33,14 @@ class ClusterBatchPicking(Component):
     _usage = "cluster_batch_picking"
     _description = __doc__
 
+    # TODO see what is really revelant
     @staticmethod
     def _sort_key_lines(line):
         return (
             line.shopfloor_priority or 10,
             line.location_id.shopfloor_picking_sequence or "",
             line.location_id.name,
+            line.product_id,
             -int(line.move_id.priority or 1),
             line.move_id.date,
             line.move_id.sequence,
@@ -122,7 +124,6 @@ class ClusterBatchPicking(Component):
                     suggested_package_dest.append(
                         self.data.package(line_in_picking.mapped("result_package_id"))
                     )
-
             suggested_package_dest = reduce(
                 lambda l, x: l.append(x) or l if x not in l else l,
                 suggested_package_dest,
@@ -517,7 +518,6 @@ class ClusterBatchPicking(Component):
                 state="scan_products",
                 data=self._create_data_for_scan_products(move_lines, batch,),
             )
-
         return self._set_quantity_for_move_line(
             move_lines,
             batch,
