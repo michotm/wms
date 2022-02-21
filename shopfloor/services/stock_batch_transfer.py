@@ -76,7 +76,8 @@ class StockBatchTransfer(Component):
                     or product_barcode
                     in [barcode.name for barcode in line.product_id.mapped("barcode_ids")]
                 )
-                and ((not dest_location_id) or line.location_dest_id.id == dest_location_id)
+                and ((not dest_location_id) or line.location_dest_id.id == dest_location_id
+                and not line.shopfloor_checkout_done)
             ]
             product = search.product_from_scan(product_barcode)
 
