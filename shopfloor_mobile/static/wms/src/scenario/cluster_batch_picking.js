@@ -449,7 +449,7 @@ const ClusterBatchPicking = {
                         );
                         let last_move_line = this.find_move_line(
                             this.state.data.move_lines,
-                            line => line.product.barcode === this.lastScanned || line.product.barcodes.findIndex(b => b.name === this.lastScanned) !== -1,
+                            line => this.lastScanned && (line.product.barcode === this.lastScanned || line.product.barcodes.findIndex(b => b.name === this.lastScanned) !== -1),
                             line => !line.done
                         );
 
